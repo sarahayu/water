@@ -115,33 +115,44 @@ export function geojsonToGridPoints(dataFeatures) {
 
 /**
  * 
- * returns array of hexids and avgProperty
- * [[hexId1, avgProperties1], [hexId2, avgProperties2], ...]
+ * returns array of array of hexids and avgProperty, ordered by resolution
+ * [
+ *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // lowest resolution, larger hexagons
+ *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],
+ *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // highest resoultion, smaller hexagons
+ * ]
  */
 function gridPointsToHexPoints(gridPoints, averageFn, noise, noise2) {
-  let binnedPoints = {}
 
-  gridPoints.forEach(point => {
-    let hexId = h3.latLngToCell(point[1], point[0], 8)
+  let resPoints = []
 
-    if (hexId in binnedPoints) {
-      binnedPoints[hexId].push(point[2])
+  for (let res = 7; res <= 10; res++) {
+    
+    let binnedPoints = {}
+
+    gridPoints.forEach(point => {
+      let hexId = h3.latLngToCell(point[1], point[0], res)
+
+      if (hexId in binnedPoints) {
+        binnedPoints[hexId].push(point[2])
+      }
+      else {
+        binnedPoints[hexId] = [ point[2] ]
+      }
+    })
+
+    let points = []
+
+    for (let hexId in binnedPoints) {
+
+      const [centerLat, centerLng] = h3.cellToLatLng(hexId)
+      points.push([hexId, averageFn(binnedPoints[hexId], centerLat, centerLng, noise, noise2)])
     }
-    else {
-      binnedPoints[hexId] = [ point[2] ]
-    }
-  })
 
-  let points = []
-
-
-  for (let hexId in binnedPoints) {
-
-    const [centerLat, centerLng] = h3.cellToLatLng(hexId)
-    points.push([hexId, averageFn(binnedPoints[hexId], centerLat, centerLng, noise, noise2)])
+    resPoints.push(points)
   }
 
-  return points
+  return resPoints
 }
 
 /**
@@ -157,13 +168,23 @@ function geojsonToHexPoints(dataFeatures, avgFn, noise, noise2) {
 
 export default class HexTileBorderLayer extends CompositeLayer {
 
+  initializeState() {
+    super.initializeState();
+    this.setState({
+      hextiles: geojsonToHexPoints(this.props.data.features, this.props.averageFn, this.props.noise, this.props.heightNoise),
+      // gridps: geojsonToGridPoints(this.props.data.features)
+    })
+  }
+
     renderLayers() {
 
-        let hextiles = geojsonToHexPoints(this.props.data.features, this.props.averageFn, this.props.noise, this.props.heightNoise)
+      const { hextiles, gridps } = this.state
+
+      if (!hextiles) return
 
         let polygons = []
 
-        hextiles.forEach(tile => {
+        hextiles[Math.max(Math.min(Math.floor(hextiles.length * this.props.resolution), hextiles.length - 1), 0)].forEach(tile => {
 
             let tilePolygon = calcPolyBorder(tile[0], this.props.thicknessRange)
 
@@ -208,4 +229,5 @@ HexTileBorderLayer.defaultProps = {
   ...SolidPolygonLayer.defaultProps,
   thicknessRange: [0.7, 0.9],
   averageFn: avgObject,
+  resolution: 1,
 }

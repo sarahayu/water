@@ -35,6 +35,10 @@ const colorInterpGW = (groundwater) => interpolateBlues(
   scaleLinear().domain([-0.6, 1]).range([1, 0])(groundwater)
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
+const resScale = scaleLinear()
+  .domain([INITIAL_VIEW_STATE.zoom, INITIAL_VIEW_STATE.maxZoom])
+  .range([0, 1])
+
 const COLOR_SCALE = scaleLinear()
 .domain([-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2])
 .range([
@@ -96,7 +100,10 @@ export default function App({data = vancouverData, mapStyle = MAP_STYLE}) {
     lightingEffect.shadowColor = [0, 0, 0, 0.5];
     return [lightingEffect];
   });
+  const [curZoom, setCurZoom] = useState(1);
   
+  // let curRes = Math.max(Math.min((curZoom - INITIAL_VIEW_STATE.zoom) / (INITIAL_VIEW_STATE.maxZoom - INITIAL_VIEW_STATE.zoom), 1), 0)
+  let curRes = resScale(curZoom)
   const layers = [
     // new HexTileBorderLayer({
     //     id: `ActivityInnerBorderLayer`,
@@ -115,6 +122,7 @@ export default function App({data = vancouverData, mapStyle = MAP_STYLE}) {
       // averageFn: arr => ( { growth: arr.map(a => a.growth).reduce((a, b) => a + b) / arr.length } ),
       filled: true,
       raised: false,
+      resolution: curRes,
       // extruded: true,
       // wireframe: true,
       // getElevation: d => d.properties.growth * 3000 + 1,
@@ -132,6 +140,7 @@ export default function App({data = vancouverData, mapStyle = MAP_STYLE}) {
       // averageFn: arr => ( { growth: arr.map(a => a.growth).reduce((a, b) => a + b) / arr.length } ),
       filled: true,
       raised: false,
+      resolution: curRes,
       // extruded: true,
       // wireframe: true,
       // getElevation: d => d.properties.growth * 3000 + 1,
@@ -172,7 +181,9 @@ export default function App({data = vancouverData, mapStyle = MAP_STYLE}) {
       effects={effects}
       initialViewState={INITIAL_VIEW_STATE}
       controller={true}
-      views={ new MapView({ orthographic: true }) }
+      onViewStateChange={({viewState}) => {
+        setCurZoom(viewState.zoom)}}
+      // views={ new MapView({ orthographic: true }) }
       getTooltip={getTooltip}
     >
       <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
