@@ -9,6 +9,8 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@loaders.gl/core": "^3.4.14",
+    "@loaders.gl/obj": "^3.4.14",
     "d3": "^7.8.5",
     "d3-geo": "^3.1.0",
     "d3-scale": "^2.0.0",

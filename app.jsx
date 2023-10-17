@@ -3,41 +3,51 @@ import {createRoot} from 'react-dom/client';
 import {Map} from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import DeckGL from '@deck.gl/react';
+import {OBJLoader} from '@loaders.gl/obj';
 import { CompositeLayer, SolidPolygonLayer } from "deck.gl"
 import {GeoJsonLayer, PolygonLayer, ScatterplotLayer} from '@deck.gl/layers';
 import {H3HexagonLayer} from '@deck.gl/geo-layers';
 import {LightingEffect, AmbientLight, _SunLight as SunLight, MapView} from '@deck.gl/core';
 import UniformDotFilter from './UniformDotFilter';
-import vancouverData from './vancouver-blocks.json'
-import HexTileBorderLayer, { geojsonToGridPoints } from './HexTileBorderLayer';
+// import vancouverData from './vancouver-blocks.json'
+import groundwaterData from './Baseline_Groundwater.json'
+import unmetdemandData from './Baseline_Unmetdemand.json'
+import SolidHexTileLayer, { geojsonToGridPoints } from './SolidHexTileLayer'
 import {scaleLinear, scaleThreshold} from 'd3-scale';
 import {interpolateReds, interpolateBlues, interpolateGreens} from 'd3';
+import * as h3 from 'h3-js'
 import { Noise } from 'noisejs'
+import IconHexTileLayer from './IconHexTileLayer';
 
 // Source data GeoJSON
 // const DATA_URL =
 //   'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/geojson/vancouver-blocks.json'; // eslint-disable-line
 
 const INITIAL_VIEW_STATE = {
-  latitude: 49.254,
-  longitude: -123.13,
-  zoom: 11,
-  maxZoom: 16,
-  pitch: 45,
-  bearing: 0
-};
+  longitude: -122,
+  latitude: 39,
+  zoom: 9,
+  pitch: 60,
+  bearing: 30
+}
 
 const colorInterp = (unmetDemand) => interpolateReds(
-  scaleLinear().domain([-0.6, 1]).range([1, 0])(unmetDemand)
+  scaleLinear().domain([-250, 10]).range([1, 0])(unmetDemand)
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
+const valueInterp = scaleLinear()
+  .domain([-250, 10])
+  .range([1, 0])
+  .clamp(true)
+
 const colorInterpGW = (groundwater) => interpolateBlues(
-  scaleLinear().domain([-0.6, 1]).range([1, 0])(groundwater)
+  scaleLinear().domain([-250, 700]).range([0, 1])(groundwater)
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
 const resScale = scaleLinear()
-  .domain([INITIAL_VIEW_STATE.zoom, INITIAL_VIEW_STATE.maxZoom])
+  .domain([INITIAL_VIEW_STATE.zoom, INITIAL_VIEW_STATE.zoom + 2])
   .range([0, 1])
+  .clamp(true)
 
 const COLOR_SCALE = scaleLinear()
 .domain([-0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2])
@@ -94,18 +104,30 @@ function getTooltip({object}) {
   );
 }
 
-export default function App({data = vancouverData, mapStyle = MAP_STYLE}) {
+export default function App({data = groundwaterData, mapStyle = MAP_STYLE}) {
   const [effects] = useState(() => {
     const lightingEffect = new LightingEffect({ambientLight, dirLight});
     lightingEffect.shadowColor = [0, 0, 0, 0.5];
     return [lightingEffect];
   });
   const [curZoom, setCurZoom] = useState(1);
+
+  const avgArrOfArr = arr => {
+      let avgArr = []
+
+      for (let j = 0; j < arr[0].length; j++) {
+          avgArr.push(arr.map(a => Number(a[j])).reduce((a, b) => (a + b)) / arr.length)
+      }
+
+      return avgArr
+  }
+
+  let noise = new Noise(0.314);
   
   // let curRes = Math.max(Math.min((curZoom - INITIAL_VIEW_STATE.zoom) / (INITIAL_VIEW_STATE.maxZoom - INITIAL_VIEW_STATE.zoom), 1), 0)
   let curRes = resScale(curZoom)
   const layers = [
-    // new HexTileBorderLayer({
+    // new SolidHexTileLayer({
     //     id: `ActivityInnerBorderLayer`,
     //     data,
     //     thicknessRange: [0, 0.7],
@@ -115,42 +137,82 @@ export default function App({data = vancouverData, mapStyle = MAP_STYLE}) {
     //     pickable: true,
     //     noise: new Noise(0.314),
     // }),
-    new HexTileBorderLayer({
-      id: `ActivityInnerBorderLayer`,
-      data,
-      thicknessRange: [0, 0.7],
-      // averageFn: arr => ( { growth: arr.map(a => a.growth).reduce((a, b) => a + b) / arr.length } ),
+    new SolidHexTileLayer({
+      id: `ActivityBaseBorderLayer`,
+      data: groundwaterData,
+      thicknessRange: [0, 1],
+      averageFn: (arr, hexID) => { 
+        const [centerLat, centerLng] = h3.cellToLatLng(hexID)
+        let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
+      
+        return {
+          Elevation: value,
+          Groundwater: avgArrOfArr(arr.map(a => Object.values(a.Groundwater))),
+        }
+      },
       filled: true,
-      raised: false,
+      extruded: true,
+      getElevation: d => d.properties.Elevation * 10000,
       resolution: curRes,
-      // extruded: true,
-      // wireframe: true,
-      // getElevation: d => d.properties.growth * 3000 + 1,
-      getFillColor: d => colorInterpGW(d.properties.valuePerSqm),
-      // getFillColor: d => COLOR_SCALE(0),
+      getFillColor: d => colorInterpGW(d.properties.Groundwater[1199]),
       pickable: true,
-      opacity: 1,
-      noise: new Noise(0.514),
-      heightNoise: new Noise(0.314),
-  }),
-  new HexTileBorderLayer({
-      id: `ActivityOuterBorderLayer`,
-      data,
-      thicknessRange: [0.7, 1],
-      // averageFn: arr => ( { growth: arr.map(a => a.growth).reduce((a, b) => a + b) / arr.length } ),
-      filled: true,
-      raised: false,
+      opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `ActivityAmtBorderLayer`,
+      data: unmetdemandData,
+      averageFn: (arr, hexID) => { 
+        const [centerLat, centerLng] = h3.cellToLatLng(hexID)
+        let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
+
+        return {
+          Elevation: value,
+          UnmetDemand: avgArrOfArr(arr.map(a => Object.values(a.UnmetDemand))),
+        }
+      },
+      loaders: [OBJLoader],
+      mesh: './eyeball.obj',
+      raised: true,
+      getElevation: d => d.properties.Elevation * 10000 + 1,
       resolution: curRes,
-      // extruded: true,
-      // wireframe: true,
-      // getElevation: d => d.properties.growth * 3000 + 1,
-      getFillColor: d => colorInterp(d.properties.growth),
-      // getFillColor: d => COLOR_SCALE(0),
+      getColor: [0, 100, 0],
+      getValue: d => valueInterp(d.properties.UnmetDemand[1199]),
+      sizeScale: 480,
       pickable: true,
-      opacity: 1,
-      noise: new Noise(0.514),
-      heightNoise: new Noise(0.314),
-  }),
+      opacity: 0.9,
+    }),
+
+// new GeoJsonLayer({
+//   id: 'geojson',
+//   data: unmetdemandData,
+//   opacity: 0.1,
+//   stroked: false,
+//   filled: true,
+//   // extruded: true,
+//   wireframe: true,
+//   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
+//   getFillColor: f => colorInterp(f.properties.UnmetDemand[1199]),
+//   getLineColor: [255, 255, 255],
+//   pickable: true
+// })
+  // new SolidHexTileLayer({
+  //     id: `ActivityOuterBorderLayer`,
+  //     data,
+  //     thicknessRange: [0.7, 1],
+  //     // averageFn: arr => ( { growth: arr.map(a => a.growth).reduce((a, b) => a + b) / arr.length } ),
+  //     filled: true,
+  //     raised: false,
+  //     resolution: curRes,
+  //     // extruded: true,
+  //     // wireframe: true,
+  //     // getElevation: d => d.properties.growth * 3000 + 1,
+  //     getFillColor: d => colorInterp(d.properties.growth),
+  //     // getFillColor: d => COLOR_SCALE(0),
+  //     pickable: true,
+  //     opacity: 1,
+  //     noise: new Noise(0.514),
+  //     heightNoise: new Noise(0.314),
+  // }),
     // new ScatterplotLayer({
     //   id: 'scatter-plot',
     //   data: geojsonToGridPoints(data.features),
