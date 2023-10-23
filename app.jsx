@@ -11,7 +11,7 @@ import {LightingEffect, AmbientLight, _SunLight as SunLight, MapView} from '@dec
 import UniformDotFilter from './UniformDotFilter';
 // import vancouverData from './vancouver-blocks.json'
 import groundwaterData from './Baseline_Groundwater.json'
-import unmetdemandData from './Baseline_Unmetdemand.json'
+import unmetdemandData from './Baseline_Unmetdemand_Process.json'
 import SolidHexTileLayer, { geojsonToGridPoints } from './SolidHexTileLayer'
 import {scaleLinear, scaleThreshold} from 'd3-scale';
 import {interpolateReds, interpolateBlues, interpolateGreens} from 'd3';
@@ -154,10 +154,31 @@ export default function App({data = groundwaterData, mapStyle = MAP_STYLE}) {
       extruded: true,
       getElevation: d => d.properties.Elevation * 10000,
       resolution: curRes,
-      getFillColor: d => colorInterpGW(d.properties.Groundwater[1199]),
+      getFillColor: d => colorInterpGW(d.properties.Groundwater[1197]),
       pickable: true,
       opacity: 0.9,
     }),
+    // new SolidHexTileLayer({
+    //   id: `ActivityBaseBorderLayer2`,
+    //   data: unmetdemandData,
+    //   thicknessRange: [0, 0.65],
+    //   averageFn: (arr, hexID) => { 
+    //     const [centerLat, centerLng] = h3.cellToLatLng(hexID)
+    //     let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
+      
+    //     return {
+    //       Elevation: value,
+    //       UnmetDemand: avgArrOfArr(arr.map(a => Object.values(a.UnmetDemand))),
+    //     }
+    //   },
+    //   filled: true,
+    //   raised: true,
+    //   getElevation: d => d.properties.Elevation * 10000 + 1,
+    //   resolution: curRes,
+    //   getFillColor: d => colorInterp(d.properties.UnmetDemand[1197]),
+    //   pickable: true,
+    //   opacity: 0.9,
+    // }),
     new IconHexTileLayer({
       id: `ActivityAmtBorderLayer`,
       data: unmetdemandData,
@@ -176,22 +197,35 @@ export default function App({data = groundwaterData, mapStyle = MAP_STYLE}) {
       getElevation: d => d.properties.Elevation * 10000 + 1,
       resolution: curRes,
       getColor: [0, 100, 0],
-      getValue: d => valueInterp(d.properties.UnmetDemand[1199]),
+      getValue: d => valueInterp(d.properties.UnmetDemand[1197]),
       sizeScale: 480,
       pickable: true,
       opacity: 0.9,
     }),
 
+//     new GeoJsonLayer({
+//       id: 'geojson',
+//       data: groundwaterData,
+//       opacity: 0.9,
+//       stroked: false,
+//       filled: true,
+//       // extruded: true,
+//       wireframe: true,
+//       // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
+//       getFillColor: f => colorInterpGW(f.properties.Groundwater[1197]),
+//       getLineColor: [255, 255, 255],
+//       pickable: true
+//     }),
 // new GeoJsonLayer({
-//   id: 'geojson',
+//   id: 'geojson2',
 //   data: unmetdemandData,
-//   opacity: 0.1,
+//   opacity: 0.3,
 //   stroked: false,
 //   filled: true,
 //   // extruded: true,
 //   wireframe: true,
 //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-//   getFillColor: f => colorInterp(f.properties.UnmetDemand[1199]),
+//   getFillColor: f => colorInterp(f.properties.UnmetDemand[1197]),
 //   getLineColor: [255, 255, 255],
 //   pickable: true
 // })
