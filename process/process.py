@@ -126,7 +126,7 @@ def polygonToPoints(dataFeature):
     # print(minLat)
     # print(maxLat)
 
-    scale = 100
+    scale = 10
     stepSize = 1 / scale
 
     poly = shapely.geometry.polygon.Polygon([(polycoord[0], polycoord[1]) for polycoord in flattenedCoords])
@@ -255,7 +255,7 @@ def geojsonToHexPoints(dataFeatures, avgFn, resRange):
     return hexPoints
  
 # Opening JSON file
-with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes/groundwater") as region_file, \
+with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes/demand_units") as region_file, \
     urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/CS3_ALT3_2022med_L2020ADV/unmetdemand") as temporal_file:
  
     # Reading from json file
@@ -277,7 +277,7 @@ with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes
     region_object["features"] = new_fs
 
         
-    with open("CS3_ALT3_2022med_L2020ADV.json", "w") as outfile:
+    with open("CS3_ALT3_2022med_L2020ADV_small.json", "w") as outfile:
 
         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
 

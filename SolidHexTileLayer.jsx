@@ -173,7 +173,7 @@ export default class SolidHexTileLayer extends CompositeLayer {
   initializeState() {
     super.initializeState();
     this.setState({
-      hextiles: geojsonToHexPoints(this.props.data.features, this.props.averageFn, this.props.resRange),
+      hextiles: this.props.data //geojsonToHexPoints(this.props.data.features, this.props.averageFn, this.props.resRange),
     })
   }
 

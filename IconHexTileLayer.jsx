@@ -179,14 +179,16 @@ export default class IconHexTileLayer extends CompositeLayer {
             const edgeLen = h3.getHexagonEdgeLengthAvg(5, h3.UNITS.km) / 250
 
             for (let [dx, dy] of formationInterp(this.props.getValue({ properties }))) {
+
+              let [ddx, ddy] = this.props.offset
                 if (this.props.raised)
                 data.push({
-                  position: [x + dx * edgeLen, y + dy * edgeLen, this.props.getElevation({ properties })],
+                  position: [x + dx * edgeLen + ddx * edgeLen, y + dy * edgeLen + ddy * edgeLen, this.props.getElevation({ properties })],
                   properties,
                 })
               else
                 data.push({
-                  position: [x + dx * edgeLen, y + dy * edgeLen],
+                  position: [x + dx * edgeLen + ddx * edgeLen, y + dy * edgeLen + ddy * edgeLen],
                   properties,
                 })
             }
@@ -238,4 +240,5 @@ IconHexTileLayer.defaultProps = {
   resolution: 0,
   resRange: [5, 5],
   getValue: d => d,
+  offset: [0, 0],
 }
