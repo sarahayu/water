@@ -71,8 +71,8 @@ def avgObject(arrObjs):
     # return avgObj
 
     return {
-        "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
-        # "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
+        # "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
+        "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
     }
 
 # function flatten(arr) {  
@@ -228,7 +228,7 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
 
     minRes, maxRes = resRange
 
-    im = Image.open('elev.png', 'r').convert("RGB")
+    im = Image.open('elevcorr.png', 'r')
     imwidth, imheight = im.size
     pixel_values = list(im.getdata())
     
@@ -256,14 +256,13 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
             x = math.floor(x * imwidth)
             y = math.floor(y * imheight)
 
-            elev = pixel_values[imwidth * y + x][0]
-            # if idd >= 10:
-                # break
-            # points.append([hexId, averageFn(binnedPoints[hexId])])
+            (r, g, b, _) = pixel_values[imwidth * y + x]
+            elev = ((r * 256 + g * 1 + b * 1 / 256) - 32768)
+            
             avgObj = averageFn([dataFeatures[ind]["properties"] for ind in binnedPoints[hexId]])
 
             avgObj["Elevation"] = elev
-            # print(a)
+            
             points.append([hexId, avgObj])
 
             idd += 1
@@ -325,7 +324,7 @@ with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes
 #     region_object = ujson.load(region_file)
 
         
-#     with open("groundwater_elev_hex.json", "w") as outfile:
+#     with open("groundwater_hex.json", "w") as outfile:
 
 #         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
 
