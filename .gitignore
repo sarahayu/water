@@ -127,3 +127,6 @@ dist
 .pnp.*
 
 .venv
+
+*.json
+*.geojson

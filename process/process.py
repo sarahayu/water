@@ -1,11 +1,25 @@
 import urllib.request, ujson, shapely, h3
 from functools import reduce
+import math
+from PIL import Image
+
+def latlngToMerc(lat, lon):
+    z = 5
+
+    latRad = lat * 3.141593 / 180
+    n = pow(2, z)
+    xTile = n * ((lon + 180) / 360)
+    yTile = n * (1-(math.log(math.tan(latRad) + 1 / math.cos(latRad)) / 3.141593)) / 2
+
+    return xTile - math.floor(xTile), yTile - math.floor(yTile)
 
 # function avg(arr) {
 #   return arr.reduce((a, b) => a + b) / arr.length
 # }
 
 def avg(arr): 
+    if len(arr) == 0:
+        return 0
     return reduce(lambda a, b: a + b, arr) / len(arr) 
 
 
@@ -20,10 +34,14 @@ def avg(arr):
 # }
 
 def avgArrOfArr(arr):
+    
     avgArr = []
 
-    for j in range(0, len(arr[0])):
-        avgArr.append(avg([a[j] for a in arr]))
+    if len(arr) != 0:
+        for j in range(0, len(arr[0])):
+            if j != 1201:
+                # print(j)
+                avgArr.append(avg([float(a[j]) for a in arr]))
 
     return avgArr
 
@@ -44,9 +62,6 @@ def avgArrOfArr(arr):
 #   return avgObj
 # }
 
-def mapToVals(mappy):
-    return [mappy[k] for k in mappy]
-
 def avgObject(arrObjs):
     # avgObj = {}
 
@@ -56,7 +71,8 @@ def avgObject(arrObjs):
     # return avgObj
 
     return {
-        "UnmetDemand": avgArrOfArr([ [obj["UnmetDemand"][k] for k in obj["UnmetDemand"]] for obj in arrObjs]),
+        "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
+        # "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
     }
 
 # function flatten(arr) {  
@@ -65,7 +81,7 @@ def avgObject(arrObjs):
 
 # https://stackoverflow.com/a/952952
 def flatten(arr):
-    return [item for sublist in arr for item in sublist]
+    return [[float(i) for i in item] for sublist in arr for item in sublist]
 
 # /**
 #  * 
@@ -212,11 +228,17 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
 
     minRes, maxRes = resRange
 
+    im = Image.open('elev.png', 'r').convert("RGB")
+    imwidth, imheight = im.size
+    pixel_values = list(im.getdata())
+    
     for res in range(minRes, maxRes + 1):
         binnedPoints = {}
 
         for point in gridPoints:
-            hexId = h3.latlng_to_cell(point[1], point[0], res)
+            lat, lon = point[1], point[0]
+
+            hexId = h3.latlng_to_cell(lat, lon, res)
 
             if hexId in binnedPoints:
                 binnedPoints[hexId].append(point[2])
@@ -225,9 +247,26 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
 
         points = []
 
+        idd = 0
+
         for hexId in binnedPoints:
+            lat, lon = h3.cell_to_latlng(hexId)
+            x, y = latlngToMerc(lat, lon)
+
+            x = math.floor(x * imwidth)
+            y = math.floor(y * imheight)
+
+            elev = pixel_values[imwidth * y + x][0]
+            # if idd >= 10:
+                # break
             # points.append([hexId, averageFn(binnedPoints[hexId])])
-            points.append([hexId, averageFn([dataFeatures[ind]["properties"] for ind in binnedPoints[hexId]])])
+            avgObj = averageFn([dataFeatures[ind]["properties"] for ind in binnedPoints[hexId]])
+
+            avgObj["Elevation"] = elev
+            # print(a)
+            points.append([hexId, avgObj])
+
+            idd += 1
 
         resPoints.append(points)
 
@@ -256,31 +295,40 @@ def geojsonToHexPoints(dataFeatures, avgFn, resRange):
  
 # Opening JSON file
 with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes/demand_units") as region_file, \
-    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/CS3_ALT3_2022med_L2020ADV/unmetdemand") as temporal_file:
+    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/CS3_BL/unmetdemand") as temporal_file, \
+    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/bl_h000/unmetdemand") as temporal_file_bl:
  
     # Reading from json file
     region_object = ujson.load(region_file)
     temporal_object = ujson.load(temporal_file)
+    temporal_bl_object = ujson.load(temporal_file_bl)
 
-    for b in temporal_object:
-        cop = {}
-        i = 1
-        for num in temporal_object[b]:
-            cop[str(i)] = str(num)
-            i += 1
     new_fs = [f for f in region_object["features"] if f["properties"]["DU_ID"] and f["properties"]["DU_ID"] in temporal_object]
 
     for f in new_fs:
         idd = f["properties"]["DU_ID"]
-        f["properties"]["UnmetDemand"] = temporal_object[idd]
+        f["properties"]["Difference"] = [temporal_bl_object[idd][i] - temporal_object[idd][i] for i in temporal_object[idd]]
 
     region_object["features"] = new_fs
 
         
-    with open("CS3_ALT3_2022med_L2020ADV_small.json", "w") as outfile:
+    with open("difference_hex.json", "w") as outfile:
 
         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
 
         ujson.dump(hex_object, outfile)
+
+# # Opening JSON file
+# with open("../Baseline_Groundwater.json") as region_file:
+ 
+#     # Reading from json file
+#     region_object = ujson.load(region_file)
+
+        
+#     with open("groundwater_elev_hex.json", "w") as outfile:
+
+#         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
+
+#         ujson.dump(hex_object, outfile)
 
     

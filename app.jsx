@@ -1,24 +1,19 @@
-import React, {useState} from 'react';
-import {createRoot} from 'react-dom/client';
-import {Map} from 'react-map-gl';
-import maplibregl from 'maplibre-gl';
+import { AmbientLight, LightingEffect, _SunLight as SunLight } from '@deck.gl/core';
+import { OBJLoader } from '@loaders.gl/obj';
+import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
-import {OBJLoader} from '@loaders.gl/obj';
-import { CompositeLayer, SolidPolygonLayer } from "deck.gl"
-import {GeoJsonLayer, PolygonLayer, ScatterplotLayer} from '@deck.gl/layers';
-import {H3HexagonLayer} from '@deck.gl/geo-layers';
-import {LightingEffect, AmbientLight, _SunLight as SunLight, MapView} from '@deck.gl/core';
-import UniformDotFilter from './UniformDotFilter';
-// import vancouverData from './vancouver-blocks.json'
-import groundwaterData from './Groundwater_small_elev.json'
-import unmetdemandData from './CS3_ALT3_2022med_L2020ADV_small.json'
-import differencedemandData from './difference_unmetdemand_reprocess.json'
-import SolidHexTileLayer, { geojsonToGridPoints } from './SolidHexTileLayer'
-import {scaleLinear, scaleThreshold} from 'd3-scale';
-import {interpolateReds, interpolateBlues, interpolateGreens, interpolatePRGn} from 'd3';
-import * as h3 from 'h3-js'
-import { Noise } from 'noisejs'
-import IconHexTileLayer from './IconHexTileLayer';
+import maplibregl from 'maplibre-gl';
+import React, { useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import SolidHexTileLayer from './SolidHexTileLayer'
+import IconHexTileLayer from './IconHexTileLayer'
+import groundwaterData from './groundwater_hex.json'
+import differencedemandData from './difference_hex.json'
+import unmetdemandData from './CS3_BL_hex.json'
+import { Map } from 'react-map-gl';
+import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
+import { scaleLinear } from 'd3-scale';
+import { Noise } from 'noisejs';
 
 // Source data GeoJSON
 // const DATA_URL =
@@ -121,7 +116,7 @@ function getTooltip({object}) {
   );
 }
 
-export default function App({data = groundwaterData, mapStyle = MAP_STYLE}) {
+export default function App({data, mapStyle = MAP_STYLE}) {
   const [effects] = useState(() => {
     const lightingEffect = new LightingEffect({ambientLight, dirLight});
     lightingEffect.shadowColor = [0, 0, 0, 0.5];
@@ -144,250 +139,41 @@ export default function App({data = groundwaterData, mapStyle = MAP_STYLE}) {
   // let curRes = Math.max(Math.min((curZoom - INITIAL_VIEW_STATE.zoom) / (INITIAL_VIEW_STATE.maxZoom - INITIAL_VIEW_STATE.zoom), 1), 0)
   let curRes = resScale(curZoom)
   const layers = [
-    // new SolidHexTileLayer({
-    //     id: `ActivityInnerBorderLayer`,
-    //     data,
-    //     thicknessRange: [0, 0.7],
-    //     // averageFn: arr => ( { growth: arr.map(a => a.growth).reduce((a, b) => a + b) / arr.length } ),
-    //     filled: true,
-    //     getFillColor: d => colorInterpGW(d.properties.growth),
-    //     pickable: true,
-    //     noise: new Noise(0.314),
-    // }),
-    // new SolidHexTileLayer({
-    //   id: `ActivityBaseBorderLayer`,
-    //   data: groundwaterData,
-    //   thicknessRange: [0, 1],
-    //   averageFn: (arr, hexID) => { 
-    //     const [centerLat, centerLng] = h3.cellToLatLng(hexID)
-    //     let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
-      
-    //     return {
-    //       Elevation: value,
-    //       Groundwater: avgArrOfArr(arr.map(a => Object.values(a.Groundwater))),
-    //     }
-    //   },
-    //   filled: true,
-    //   extruded: true,
-    //   getElevation: d => d.properties.Elevation * 10000,
-    //   resolution: curRes,
-    //   getFillColor: d => colorInterpGW(d.properties.Groundwater[1197]),
-    //   pickable: true,
-    //   opacity: 0.9,
-    // }),
-    // new SolidHexTileLayer({
-    //   id: `ActivityBaseBorderLayer2`,
-    //   data: unmetdemandData,
-    //   thicknessRange: [0, 0.65],
-    //   averageFn: (arr, hexID) => { 
-    //     const [centerLat, centerLng] = h3.cellToLatLng(hexID)
-    //     let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
-      
-    //     return {
-    //       Elevation: value,
-    //       UnmetDemand: avgArrOfArr(arr.map(a => Object.values(a.UnmetDemand))),
-    //     }
-    //   },
-    //   filled: true,
-    //   raised: true,
-    //   getElevation: d => d.properties.Elevation * 10000 + 1,
-    //   resolution: curRes,
-    //   getFillColor: d => colorInterp(d.properties.UnmetDemand[1197]),
-    //   pickable: true,
-    //   opacity: 0.9,
-    // }),
-    
     new SolidHexTileLayer({
-      id: `ActivityBaseBorderLayer`,
+      id: `GroundwaterLayerHex`,
       data: groundwaterData,
       thicknessRange: [0, 1],
-      averageFn: (arr, hexID) => { 
-        const [centerLat, centerLng] = h3.cellToLatLng(hexID)
-        let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
-      
-        return {
-          Elevation: value,
-          Groundwater: avgArrOfArr(arr.map(a => Object.values(a.Groundwater))),
-        }
-      },
       filled: true,
       extruded: true,
       getElevation: d => d.properties.Elevation * 100,
       resolution: curRes,
       getFillColor: d => colorInterpGW(d.properties.Groundwater[1197]),
-      pickable: true,
       opacity: 0.9,
     }),
-    // new SolidHexTileLayer({
-    //   id: `ActivityBaseBorderLayer2`,
-    //   data: unmetdemandData,
-    //   thicknessRange: [0, 0.65],
-    //   averageFn: (arr, hexID) => { 
-    //     const [centerLat, centerLng] = h3.cellToLatLng(hexID)
-    //     let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
-      
-    //     return {
-    //       Elevation: value,
-    //       UnmetDemand: avgArrOfArr(arr.map(a => Object.values(a.UnmetDemand))),
-    //     }
-    //   },
-    //   filled: true,
-    //   raised: true,
-    //   getElevation: d => 1,
-    //   resolution: curRes,
-    //   getFillColor: d => colorInterp(d.properties.UnmetDemand[1197]),
-    //   pickable: true,
-    //   opacity: 0.9,
-    // }),
-    // new SolidHexTileLayer({
-    //   id: `ActivityBaseBorderLayerDif`,
-    //   data: differencedemandData,
-    //   thicknessRange: [0.5, 0.65],
-    //   averageFn: (arr, hexID) => { 
-    //     const [centerLat, centerLng] = h3.cellToLatLng(hexID)
-    //     let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
-      
-    //     return {
-    //       Elevation: value,
-    //       UnmetDemand: avgArrOfArr(arr.map(a => Object.values(a.UnmetDemand))),
-    //     }
-    //   },
-    //   filled: true,
-    //   raised: true,
-    //   getElevation: d => d.properties.Elevation * 10000 + 1,
-    //   resolution: curRes,
-    //   getFillColor: d => colorInterpDifference(d.properties.UnmetDemand[1197]),
-    //   pickable: true,
-    //   opacity: 0.9,
-    // }),
-    // new IconHexTileLayer({
-    //   id: `ActivityAmtBorderLayer`,
-    //   data: unmetdemandData,
-    //   averageFn: (arr, hexID) => { 
-    //     const [centerLat, centerLng] = h3.cellToLatLng(hexID)
-    //     let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
-
-    //     return {
-    //       Elevation: value,
-    //       UnmetDemand: avgArrOfArr(arr.map(a => Object.values(a.UnmetDemand))),
-    //     }
-    //   },
-    //   loaders: [OBJLoader],
-    //   mesh: './eyeball.obj',
-    //   raised: true,
-    //   getElevation: d => d.properties.Elevation * 10000 + 1,
-    //   resolution: curRes,
-    //   getColor: [200, 0, 0],
-    //   getValue: d => valueInterp(d.properties.UnmetDemand[1197]),
-    //   sizeScale: 480,
-    //   pickable: true,
-    //   opacity: 0.9,
-    //   offset: [-0.7, 0],
-    // }),
-    // new IconHexTileLayer({
-    //   id: `ActivityDifBorderLayer`,
-    //   data: differencedemandData,
-    //   averageFn: (arr, hexID) => { 
-    //     const [centerLat, centerLng] = h3.cellToLatLng(hexID)
-    //     let value = noise.simplex2(centerLat, centerLng) / 2 + 0.5;
-
-    //     return {
-    //       Elevation: value,
-    //       UnmetDemand: avgArrOfArr(arr.map(a => Object.values(a.UnmetDemand))),
-    //     }
-    //   },
-    //   loaders: [OBJLoader],
-    //   mesh: './eyeball.obj',
-    //   raised: true,
-    //   getElevation: d => d.properties.Elevation * 10000 + 1,
-    //   resolution: curRes,
-    //   getColor: [200, 200, 0],
-    //   getValue: d => valueInterpDifference(d.properties.UnmetDemand[1197]),
-    //   sizeScale: 480,
-    //   pickable: true,
-    //   opacity: 0.9,
-    //   offset: [0.7, 0],
-    // }),
-
-    // new GeoJsonLayer({
-    //   id: 'geojson',
-    //   data: groundwaterData,
-    //   opacity: 0.9,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => colorInterpGW(f.properties.Groundwater[1197]),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
-// new GeoJsonLayer({
-//   id: 'geojson2',
-//   data: unmetdemandData,
-//   opacity: 0.3,
-//   stroked: false,
-//   filled: true,
-//   // extruded: true,
-//   wireframe: true,
-//   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-//   getFillColor: f => colorInterp(f.properties.UnmetDemand[1197]),
-//   getLineColor: [255, 255, 255],
-//   pickable: true
-// }),
-// new GeoJsonLayer({
-//   id: 'geojsondif',
-//   data: differencedemandData,
-//   opacity: 0.3,
-//   stroked: false,
-//   filled: true,
-//   // extruded: true,
-//   wireframe: true,
-//   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-//   getFillColor: f => colorInterpDifference(f.properties.UnmetDemand[1197]),
-//   getLineColor: [255, 255, 255],
-//   pickable: true
-// })
-  // new SolidHexTileLayer({
-  //     id: `ActivityOuterBorderLayer`,
-  //     data,
-  //     thicknessRange: [0.7, 1],
-  //     // averageFn: arr => ( { growth: arr.map(a => a.growth).reduce((a, b) => a + b) / arr.length } ),
-  //     filled: true,
-  //     raised: false,
-  //     resolution: curRes,
-  //     // extruded: true,
-  //     // wireframe: true,
-  //     // getElevation: d => d.properties.growth * 3000 + 1,
-  //     getFillColor: d => colorInterp(d.properties.growth),
-  //     // getFillColor: d => COLOR_SCALE(0),
-  //     pickable: true,
-  //     opacity: 1,
-  //     noise: new Noise(0.514),
-  //     heightNoise: new Noise(0.314),
-  // }),
-    // new ScatterplotLayer({
-    //   id: 'scatter-plot',
-    //   data: geojsonToGridPoints(data.features),
-    //   radiusScale: 15,
-    //   radiusMinPixels: 0.25,
-    //   getPosition: d => [d[0], d[1], 0],
-    //   getFillColor: d => COLOR_SCALE(d[2].growth),
-    //   getRadius: 1,
-    //   // updateTriggers: {
-    //   //   getFillColor: [maleColor, femaleColor]
-    //   // }
-    // })
-    // new H3HexagonLayer({
-    //   id: 'h3-hexagon-layer',
-    //   data: geojsonToHexPoints(data.features),
-    //   // pickable: true,
-    //   wireframe: false,
-    //   filled: true,
-    //   extruded: false,
-    //   getHexagon: d => d[0],
-    //   getFillColor: d => COLOR_SCALE(d[1]),
-    // }),
+    new SolidHexTileLayer({
+      id: `DifferenceLayerHex`,
+      data: differencedemandData,
+      thicknessRange: [0.5, 0.65],
+      filled: true,
+      raised: true,
+      getElevation: d => d.properties.Elevation * 100 + 1,
+      resolution: curRes,
+      getFillColor: d => colorInterpDifference(d.properties.Difference[1197]),
+      opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `UnmetDemandIcons`,
+      data: unmetdemandData,
+      loaders: [OBJLoader],
+      mesh: './eyeball.obj',
+      raised: true,
+      getElevation: d => d.properties.Elevation * 100 + 1,
+      resolution: curRes,
+      getColor: [200, 0, 0],
+      getValue: d => valueInterp(d.properties.UnmetDemand[1197]),
+      sizeScale: 480,
+      opacity: 0.9,
+    }),
   ];
 
   return (

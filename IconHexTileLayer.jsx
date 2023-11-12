@@ -5,138 +5,6 @@ import * as h3 from 'h3-js'
 import * as d3 from 'd3'
 import { lerp } from '@math.gl/core'
 
-function avg(arr) {
-  return arr.reduce((a, b) => a + b) / arr.length
-}
-
-function avgObject(arrObjs) {  
-  let avgObj = {}
-
-  let propsToAvg = Object.keys(arrObjs[0] || {})
-
-  // avgObj[propsToAvg[0]] = noise.simplex2(centerLat * 10, centerLng *10);
-  // avgObj[propsToAvg[1]] = noise2.simplex2(centerLat * 10, centerLng *10);
-
-  propsToAvg.forEach(propToAvg => {
-    avgObj[propToAvg] = avg(arrObjs.map(hexPoint => hexPoint[propToAvg]))
-    // avgObj[propToAvg] = value / 2 + 0.5
-  })
-
-  return avgObj
-}
-
-function flatten(arr) {  
-  return [].concat.apply([], arr)
-}
-
-/**
- * 
- * returns array of points
- * [[lat1, lon1], [lat2, lon2], ...]
- */
-function polygonToPoints(dataFeature) {
-  let points = []
-
-  // How to flatten array: https://stackoverflow.com/a/10865042
-  let flattenedCoords = flatten(dataFeature.geometry.coordinates)
-
-  let lons = flattenedCoords.map(entry => entry[0])
-  let lats = flattenedCoords.map(entry => entry[1])
-  
-  let bounds = {
-    minLat: Math.min(...lats),
-    maxLat: Math.max(...lats),
-    minLon: Math.min(...lons),
-    maxLon: Math.max(...lons),
-  
-  }
-
-  let stepSize = 0.01
-
-  for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += stepSize) {
-    for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += stepSize) {
-      if (d3Geo.geoContains(dataFeature, [lon, lat])) {
-        points.push([lon, lat])
-      }
-    }
-  }
-
-
-  return points
-}
-
-/**
- * 
- * returns array of points and properties
- * [[lat1, lon1, properties1], [lat2, lon2, properties2], ...]
- */
-export function geojsonToGridPoints(dataFeatures) {
-  let points = []
-
-  dataFeatures.forEach(feature => {
-    let regionPoints = polygonToPoints(feature)
-    points.push(...regionPoints.map(coord => [...coord, feature.properties]))
-  })
-
-  return points
-}
-
-/**
- * 
- * returns array of array of hexids and avgProperty, ordered by resolution
- * [
- *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // lowest resolution, larger hexagons
- *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],
- *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // highest resoultion, smaller hexagons
- * ]
- */
-function gridPointsToHexPoints(gridPoints, averageFn, resRange) {
-
-  let resPoints = []
-  let [minRes, maxRes] = resRange
-
-  for (let res = minRes; res <= maxRes; res++) {
-    
-    let binnedPoints = {}
-
-    gridPoints.forEach(point => {
-      let hexId = h3.latLngToCell(point[1], point[0], res)
-
-      if (hexId in binnedPoints) {
-        binnedPoints[hexId].push(point[2])
-      }
-      else {
-        binnedPoints[hexId] = [ point[2] ]
-      }
-    })
-
-    let points = []
-
-    for (let hexId in binnedPoints) {
-      points.push([hexId, averageFn(binnedPoints[hexId], hexId)])
-    }
-
-    resPoints.push(points)
-  }
-
-  return resPoints
-}
-
-/**
- * 
- * returns array of array of hexids and avgProperty, ordered by resolution
- * [
- *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // lowest resolution, larger hexagons
- *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],
- *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // highest resoultion, smaller hexagons
- * ]
- */
-function geojsonToHexPoints(dataFeatures, avgFn, resRange) {
-  let gridPoints = geojsonToGridPoints(dataFeatures)
-  let hexPoints = gridPointsToHexPoints(gridPoints, avgFn, resRange)
-  return hexPoints
-}
-
 const FORMATIONS = [    
     /* dot          */ [[0, 0]],
     /* line         */ [[0, 0.33], [0, -0.33]],
@@ -161,7 +29,7 @@ export default class IconHexTileLayer extends CompositeLayer {
   initializeState() {
     super.initializeState();
     this.setState({
-      hextiles: geojsonToHexPoints(this.props.data.features, this.props.averageFn, this.props.resRange),
+      hextiles: this.props.data,
     })
   }
 
@@ -236,7 +104,6 @@ IconHexTileLayer.defaultProps = {
   ...CompositeLayer.defaultProps,
   ...SimpleMeshLayer.defaultProps,
   thicknessRange: [0.7, 0.9],
-  averageFn: avgObject,
   resolution: 0,
   resRange: [5, 5],
   getValue: d => d,
