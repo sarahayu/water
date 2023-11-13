@@ -12,6 +12,7 @@ import differencedemandData from './difference_hex_small.json'
 import unmetdemandData from './bl_h000_hex_small.json'
 import { Map } from 'react-map-gl';
 import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
+import * as d3 from 'd3';
 import { scaleLinear } from 'd3-scale';
 import { Noise } from 'noisejs';
 
@@ -116,6 +117,12 @@ function getTooltip({object}) {
   );
 }
 
+// console.log(d3.extent(groundwaterData[groundwaterData.length - 1].map(e => e[1].Elevation)))
+
+const _elevScale = d3.scaleLinear(d3.extent(groundwaterData[groundwaterData.length - 1].map(e => e[1].Elevation)), [0, 50000])
+
+const elevScale = elev => Math.min(_elevScale(elev), 20000)
+
 export default function App({data, mapStyle = MAP_STYLE}) {
   const [effects] = useState(() => {
     const lightingEffect = new LightingEffect({ambientLight, dirLight});
@@ -145,7 +152,7 @@ export default function App({data, mapStyle = MAP_STYLE}) {
       thicknessRange: [0, 1],
       filled: true,
       extruded: true,
-      getElevation: d => d.properties.Elevation * 20,
+      getElevation: d => elevScale(d.properties.Elevation),
       resolution: curRes,
       getFillColor: d => colorInterpGW(d.properties.Groundwater[1026]),
       opacity: 0.9,
@@ -156,7 +163,7 @@ export default function App({data, mapStyle = MAP_STYLE}) {
       thicknessRange: [0.5, 0.65],
       filled: true,
       raised: true,
-      getElevation: d => d.properties.Elevation * 20 + 1,
+      getElevation: d => elevScale(d.properties.Elevation) + 1,
       resolution: curRes,
       getFillColor: d => colorInterpDifference(d.properties.Difference[1026]),
       opacity: 0.9,
@@ -167,7 +174,7 @@ export default function App({data, mapStyle = MAP_STYLE}) {
       loaders: [OBJLoader],
       mesh: './eyeball.obj',
       raised: true,
-      getElevation: d => d.properties.Elevation * 20 + 1,
+      getElevation: d => elevScale(d.properties.Elevation) + 1,
       resolution: curRes,
       getColor: [200, 0, 0],
       getValue: d => valueInterp(d.properties.UnmetDemand[1026]),
