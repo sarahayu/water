@@ -7,9 +7,9 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SolidHexTileLayer from './SolidHexTileLayer'
 import IconHexTileLayer from './IconHexTileLayer'
-import groundwaterData from './groundwater_hex_res_small.json'
-import differencedemandData from './difference_hex_res_small.json'
-import unmetdemandData from './CS3_BL_hex_res_small.json'
+import groundwaterData from './groundwater_hex_small.json'
+import differencedemandData from './difference_hex_small.json'
+import unmetdemandData from './bl_h000_hex_small.json'
 import { Map } from 'react-map-gl';
 import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
 import { scaleLinear } from 'd3-scale';
@@ -147,7 +147,7 @@ export default function App({data, mapStyle = MAP_STYLE}) {
       extruded: true,
       getElevation: d => d.properties.Elevation * 20,
       resolution: curRes,
-      getFillColor: d => colorInterpGW(d.properties.Groundwater[1197]),
+      getFillColor: d => colorInterpGW(d.properties.Groundwater[1026]),
       opacity: 0.9,
     }),
     new SolidHexTileLayer({
@@ -158,7 +158,7 @@ export default function App({data, mapStyle = MAP_STYLE}) {
       raised: true,
       getElevation: d => d.properties.Elevation * 20 + 1,
       resolution: curRes,
-      getFillColor: d => colorInterpDifference(d.properties.Difference[1197]),
+      getFillColor: d => colorInterpDifference(d.properties.Difference[1026]),
       opacity: 0.9,
     }),
     new IconHexTileLayer({
@@ -170,7 +170,7 @@ export default function App({data, mapStyle = MAP_STYLE}) {
       getElevation: d => d.properties.Elevation * 20 + 1,
       resolution: curRes,
       getColor: [200, 0, 0],
-      getValue: d => valueInterp(d.properties.UnmetDemand[1197]),
+      getValue: d => valueInterp(d.properties.UnmetDemand[1026]),
       sizeScale: 480,
       opacity: 0.9,
     }),
