@@ -10,6 +10,7 @@ import IconHexTileLayer from './IconHexTileLayer'
 import groundwaterData from './groundwater_hex_small.json'
 import differencedemandData from './difference_hex_small.json'
 import unmetdemandData from './bl_h000_hex_small.json'
+// import unmetDifferenceData from './bl_h000_difference_hex_small.json'
 import { Map } from 'react-map-gl';
 import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
 import * as d3 from 'd3';
@@ -119,7 +120,7 @@ function getTooltip({object}) {
 
 // console.log(d3.extent(groundwaterData[groundwaterData.length - 1].map(e => e[1].Elevation)))
 
-const _elevScale = d3.scaleLinear(d3.extent(groundwaterData[groundwaterData.length - 1].map(e => e[1].Elevation)), [0, 50000])
+const _elevScale = d3.scaleLinear(d3.extent(Object.values(groundwaterData[groundwaterData.length - 1]).map(e => e.Elevation)), [0, 50000])
 
 const elevScale = elev => Math.min(_elevScale(elev), 20000)
 
@@ -152,7 +153,7 @@ export default function App({data, mapStyle = MAP_STYLE}) {
       thicknessRange: [0, 1],
       filled: true,
       extruded: true,
-      getElevation: d => elevScale(d.properties.Elevation),
+      getElevation: (d, i) => elevScale(d.properties.Elevation),
       resolution: curRes,
       getFillColor: d => colorInterpGW(d.properties.Groundwater[1026]),
       opacity: 0.9,

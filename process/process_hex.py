@@ -71,8 +71,8 @@ def avgObject(arrObjs):
     # return avgObj
 
     return {
-        # "UnmetDemand": avgArrOfArr([ obj["UnmetDemand"] for obj in arrObjs]),
-        "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
+        "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
+        # "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
     }
 
 # function flatten(arr) {  
@@ -248,7 +248,7 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
             else:
                 binnedPoints[hexId] = [ point[2] ]
 
-        points = []
+        points = {}
 
         idd = 0
 
@@ -266,7 +266,7 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
 
             avgObj["Elevation"] = elev
             
-            points.append([hexId, avgObj])
+            points[hexId] = avgObj
 
             idd += 1
 
@@ -295,41 +295,42 @@ def geojsonToHexPoints(dataFeatures, avgFn, resRange):
 
     return hexPoints
  
-# # Opening JSON file
-# with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes/demand_units") as region_file, \
-#     urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/bl_h000/unmetdemand") as temporal_file:
- 
-#     # Reading from json file
-#     region_object = ujson.load(region_file)
-#     temporal_object = ujson.load(temporal_file)
-#     # temporal_bl_object = ujson.load(temporal_file_bl)
-
-#     new_fs = [f for f in region_object["features"] if f["properties"]["DU_ID"] and f["properties"]["DU_ID"] in temporal_object]
-
-#     for f in new_fs:
-#         idd = f["properties"]["DU_ID"]
-#         f["properties"]["UnmetDemand"] = [temporal_object[idd][i] for i in temporal_object[idd]]
-
-#     region_object["features"] = new_fs
-
-        
-#     with open("bl_h000_hex_small.json", "w") as outfile:
-
-#         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
-
-#         ujson.dump(hex_object, outfile)
-
 # Opening JSON file
-with open("../Baseline_Groundwater.json") as region_file:
+with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes/demand_units") as region_file, \
+    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/bl_h000/unmetdemand") as temporal_file, \
+    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/CS3_BL/unmetdemand") as temporal_file_bl:
  
     # Reading from json file
     region_object = ujson.load(region_file)
+    temporal_object = ujson.load(temporal_file)
+    temporal_bl_object = ujson.load(temporal_file_bl)
+
+    new_fs = [f for f in region_object["features"] if f["properties"]["DU_ID"] and f["properties"]["DU_ID"] in temporal_object]
+
+    for f in new_fs:
+        idd = f["properties"]["DU_ID"]
+        f["properties"]["Difference"] = [temporal_object[idd][i] - temporal_bl_object[idd][i] for i in temporal_object[idd]]
+
+    region_object["features"] = new_fs
 
         
-    with open("groundwater_hex_small.json", "w") as outfile:
+    with open("difference_hex_small.json", "w") as outfile:
 
         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
 
         ujson.dump(hex_object, outfile)
+
+# # Opening JSON file
+# with open("../Baseline_Groundwater.json") as region_file:
+ 
+#     # Reading from json file
+#     region_object = ujson.load(region_file)
+
+        
+#     with open("groundwater_hex_small.json", "w") as outfile:
+
+#         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
+
+#         ujson.dump(hex_object, outfile)
 
     

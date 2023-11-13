@@ -52,20 +52,23 @@ export default class SolidHexTileLayer extends CompositeLayer {
       if (!hextiles) return
 
         let polygons = []
+        let resHex = hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)]
 
-        hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)].forEach(tile => {
+        Object.keys(resHex).forEach(hexId => {
 
-            let tilePolygon = calcPolyBorder(tile[0], this.props.thicknessRange)
+            let properts = resHex[hexId]
+
+            let tilePolygon = calcPolyBorder(hexId, this.props.thicknessRange)
 
             if (this.props.raised)
               polygons.push({
-                polygon: tilePolygon.map(hexPoints => hexPoints.map(([x, y]) => [x, y, this.props.getElevation({ properties: tile[1] })])), 
-                properties: tile[1],
+                polygon: tilePolygon.map(hexPoints => hexPoints.map(([x, y]) => [x, y, this.props.getElevation({ properties: properts })])), 
+                properties: properts,
               })
             else
               polygons.push({
                 polygon: tilePolygon, 
-                properties: tile[1],
+                properties: properts,
               })
         })
 

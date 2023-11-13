@@ -40,8 +40,10 @@ export default class IconHexTileLayer extends CompositeLayer {
       if (!hextiles) return
 
         let data = []
+        let resHex = hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)]
 
-        hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)].forEach(([hexID, properties]) => {
+        Object.keys(resHex).forEach(hexID => {
+            let properties = resHex[hexID]
 
             const [y, x] = h3.cellToLatLng(hexID)
             const edgeLen = h3.getHexagonEdgeLengthAvg(5, h3.UNITS.km) / 250
