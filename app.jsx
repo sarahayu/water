@@ -7,9 +7,9 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SolidHexTileLayer from './SolidHexTileLayer'
 import IconHexTileLayer from './IconHexTileLayer'
-import groundwaterData from './groundwater_hex.json'
-import differencedemandData from './difference_hex.json'
-import unmetdemandData from './CS3_BL_hex.json'
+import groundwaterData from './groundwater_hex_res_small.json'
+import differencedemandData from './difference_hex_res_small.json'
+import unmetdemandData from './CS3_BL_hex_res_small.json'
 import { Map } from 'react-map-gl';
 import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
 import { scaleLinear } from 'd3-scale';
