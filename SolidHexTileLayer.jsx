@@ -4,7 +4,7 @@ import * as d3Geo from 'd3-geo'
 import * as h3 from 'h3-js'
 import { lerp } from '@math.gl/core'
 
-function scaleBounds (hexId, paths, value = 1) {
+function scaleBounds(hexId, paths, value = 1) {
 
   // if(!outside) return
 
@@ -14,16 +14,16 @@ function scaleBounds (hexId, paths, value = 1) {
 
   // lerp each vertex
   let scaledPaths = paths.map(v => {
-      let v1Lng = lerp(centerLng, v[0], dist)
-      let v1Lat = lerp(centerLat, v[1], dist)
+    let v1Lng = lerp(centerLng, v[0], dist)
+    let v1Lat = lerp(centerLat, v[1], dist)
 
-      return [v1Lng, v1Lat]
+    return [v1Lng, v1Lat]
   })
 
   return scaledPaths
 }
 
-function calcPolyBorder (hexId, [thicknessMin, thicknessMax]) {
+function calcPolyBorder(hexId, [thicknessMin, thicknessMax]) {
 
   // calc hexagonal tile outline boundary
   let bounds = h3.cellToBoundary(hexId).map(p => [p[1], p[0]])
@@ -45,51 +45,51 @@ export default class SolidHexTileLayer extends CompositeLayer {
     })
   }
 
-    renderLayers() {
+  renderLayers() {
 
-      const { hextiles } = this.state
+    const { hextiles } = this.state
 
-      if (!hextiles) return
+    if (!hextiles) return
 
-        let polygons = []
-        let resHex = hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)]
+    let polygons = []
+    let resHex = hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)]
 
-        Object.keys(resHex).forEach(hexId => {
+    Object.keys(resHex).forEach(hexId => {
 
-            let properts = resHex[hexId]
+      let properts = resHex[hexId]
 
-            let tilePolygon = calcPolyBorder(hexId, this.props.thicknessRange)
+      let tilePolygon = calcPolyBorder(hexId, this.props.thicknessRange)
 
-            if (this.props.raised)
-              polygons.push({
-                polygon: tilePolygon.map(hexPoints => hexPoints.map(([x, y]) => [x, y, this.props.getElevation({ properties: properts })])), 
-                properties: properts,
-              })
-            else
-              polygons.push({
-                polygon: tilePolygon, 
-                properties: properts,
-              })
+      if (this.props.raised)
+        polygons.push({
+          polygon: tilePolygon.map(hexPoints => hexPoints.map(([x, y]) => [x, y, this.props.getElevation({ properties: properts })])),
+          properties: properts,
         })
+      else
+        polygons.push({
+          polygon: tilePolygon,
+          properties: properts,
+        })
+    })
 
-        return [
-          new SolidPolygonLayer({
-            id: `${this.props.id}SolidHexTileLayer`,
-            data: polygons,
-            getPolygon: d => d.polygon,
-            filled: this.props.filled,
-            wireframe: this.props.wireframe,
-            extruded: this.props.extruded,
-            pickable: this.props.pickable,
-            getFillColor: this.props.getFillColor,
-            getElevation: this.props.getElevation,
-            getLineColor: this.props.getLineColor,
-            getLineWidth: this.props.getLineWidth,
-            opacity: this.props.opacity,
-            updateTriggers: this.props.updateTriggers,
-          }),
-        ]
-    }
+    return [
+      new SolidPolygonLayer({
+        id: `${this.props.id}SolidHexTileLayer`,
+        data: polygons,
+        getPolygon: d => d.polygon,
+        filled: this.props.filled,
+        wireframe: this.props.wireframe,
+        extruded: this.props.extruded,
+        pickable: this.props.pickable,
+        getFillColor: this.props.getFillColor,
+        getElevation: this.props.getElevation,
+        getLineColor: this.props.getLineColor,
+        getLineWidth: this.props.getLineWidth,
+        opacity: this.props.opacity,
+        updateTriggers: this.props.updateTriggers,
+      }),
+    ]
+  }
 }
 
 SolidHexTileLayer.layerName = 'SolidHexTileLayer'

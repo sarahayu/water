@@ -3,14 +3,12 @@ import { OBJLoader } from '@loaders.gl/obj';
 import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
 import maplibregl from 'maplibre-gl';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SolidHexTileLayer from './SolidHexTileLayer'
 import IconHexTileLayer from './IconHexTileLayer'
-import groundwaterData from './groundwater_hex_small.json'
-import differencedemandData from './difference_hex_small.json'
-import unmetdemandData from './bl_h000_hex_small.json'
-// import unmetDifferenceData from './bl_h000_difference_hex_small.json'
+import allData from './process/combine_hex_small_norm.json'
+// import diffUnmetData from './process/diff_unmet_geo_unnorm.json'
 import { Map } from 'react-map-gl';
 import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
 import * as d3 from 'd3';
@@ -49,9 +47,9 @@ const colorInterpGW = (groundwater) => interpolateBlues(
   scaleLinear().domain([-250, 700]).range([0, 1])(groundwater)
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
-const colorInterpDifference = (unmetDemand) => interpolatePRGn(
+const colorInterpDifference = (unmetDemand) => d3.interpolate(interpolatePRGn(
   scaleLinear().domain([-50, 50]).range([0, 1])(unmetDemand)
-).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
+), 'white')(0).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
 const valueInterpDifference = scaleLinear()
 .domain([-50, 50])
@@ -118,85 +116,115 @@ function getTooltip({object}) {
   );
 }
 
-// console.log(d3.extent(groundwaterData[groundwaterData.length - 1].map(e => e[1].Elevation)))
-
-const _elevScale = d3.scaleLinear(d3.extent(Object.values(groundwaterData[groundwaterData.length - 1]).map(e => e.Elevation)), [0, 50000])
+const _elevScale = d3.scaleLinear(d3.extent(Object.values(allData[allData.length - 1]).map(e => e.Elevation)), [0, 50000])
 
 const elevScale = elev => Math.min(_elevScale(elev), 20000)
 
-export default function App({data, mapStyle = MAP_STYLE}) {
+export default function App({mapStyle = MAP_STYLE}) {
   const [effects] = useState(() => {
     const lightingEffect = new LightingEffect({ambientLight, dirLight});
     lightingEffect.shadowColor = [0, 0, 0, 0.5];
     return [lightingEffect];
   });
   const [curZoom, setCurZoom] = useState(1);
+  const [counter, setCounter] = useState(0);
 
-  const avgArrOfArr = arr => {
-      let avgArr = []
-
-      for (let j = 0; j < arr[0].length; j++) {
-          avgArr.push(arr.map(a => Number(a[j])).reduce((a, b) => (a + b)) / arr.length)
-      }
-
-      return avgArr
-  }
-
-  let noise = new Noise(0.314);
+  useEffect(() => {
+    setTimeout(() => setCounter(c => c + 1), 500)
+  }, [counter])
   
-  // let curRes = Math.max(Math.min((curZoom - INITIAL_VIEW_STATE.zoom) / (INITIAL_VIEW_STATE.maxZoom - INITIAL_VIEW_STATE.zoom), 1), 0)
   let curRes = resScale(curZoom)
   const layers = [
+    // new SolidHexTileLayer({
+    //   id: `DifferenceLayerHex`,
+    //   data: difnorm,
+    //   thicknessRange: [0, 1],
+    //   filled: true,
+    //   resolution: curRes,
+    //   getFillColor: d => colorInterpDifference(d.properties.Difference[counter % 1200]),
+    //   updateTriggers: {
+    //     getFillColor: [counter]
+    //   }
+    //   // opacity: 0.9,
+    // }),
+
+
     new SolidHexTileLayer({
-      id: `GroundwaterLayerHex`,
-      data: groundwaterData,
+      id: `DifferenceLayerHex`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].Difference) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
       thicknessRange: [0, 1],
       filled: true,
       extruded: true,
       getElevation: (d, i) => elevScale(d.properties.Elevation),
       resolution: curRes,
-      getFillColor: d => colorInterpGW(d.properties.Groundwater[1026]),
+      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[counter % 1200]) : [0, 0, 0, 0],
       opacity: 0.9,
+      updateTriggers: {
+        getFillColor: [counter],
+      },
     }),
     new SolidHexTileLayer({
-      id: `DifferenceLayerHex`,
-      data: differencedemandData,
-      thicknessRange: [0.5, 0.65],
+      id: `GroundwaterLayerHex`,
+      data: allData,
+      thicknessRange: [0.65, 0.80],
       filled: true,
       raised: true,
-      getElevation: d => elevScale(d.properties.Elevation) + 1,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
       resolution: curRes,
-      getFillColor: d => colorInterpDifference(d.properties.Difference[1026]),
-      opacity: 0.9,
+      getFillColor: d => colorInterpGW(d.properties.Groundwater[counter % 1200]),
+      // opacity: 0.9,
+      updateTriggers: {
+        getFillColor: [counter],
+      },
     }),
     new IconHexTileLayer({
       id: `UnmetDemandIcons`,
-      data: unmetdemandData,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].Difference) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
       loaders: [OBJLoader],
-      mesh: './eyeball.obj',
+      mesh: './drop.obj',
       raised: true,
-      getElevation: d => elevScale(d.properties.Elevation) + 1,
+      getElevation: d => elevScale(d.properties.Elevation) + 1000,
       resolution: curRes,
-      getColor: [200, 0, 0],
-      getValue: d => valueInterp(d.properties.UnmetDemand[1026]),
-      sizeScale: 480,
-      opacity: 0.9,
+      getColor: d => [232, 72, 72],
+      getValue: d => valueInterp(d.properties.UnmetDemand[counter % 1200]),
+      sizeScale: 3000,
+      // opacity: 0.9,
+      updateTriggers: {
+        getValue: [counter],
+      },
     }),
   ];
 
   return (
-    <DeckGL
-      layers={layers}
-      effects={effects}
-      initialViewState={INITIAL_VIEW_STATE}
-      controller={true}
-      onViewStateChange={({viewState}) => {
-        setCurZoom(viewState.zoom)}}
-      // views={ new MapView({ orthographic: true }) }
-      getTooltip={getTooltip}
-    >
-      <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
-    </DeckGL>
+    <>
+      <DeckGL
+        layers={layers}
+        effects={effects}
+        initialViewState={INITIAL_VIEW_STATE}
+        controller={true}
+        onViewStateChange={({viewState}) => {
+          setCurZoom(viewState.zoom)}}
+        // views={ new MapView({ orthographic: true }) }
+        getTooltip={getTooltip}
+      >
+        <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
+      </DeckGL>
+      <span style={{ position: 'absolute', display: 'block', top: 0, right: 0 }}>Month { counter }</span>
+    </>
   );
 }
 

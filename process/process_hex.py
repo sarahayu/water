@@ -1,6 +1,7 @@
 import urllib.request, ujson, shapely, h3
 from functools import reduce
 import math
+import area
 from PIL import Image
 
 def latlngToMerc(lat, lon):
@@ -62,7 +63,7 @@ def avgArrOfArr(arr):
 #   return avgObj
 # }
 
-def avgObject(arrObjs):
+def avgObject(isGroundwater):
     # avgObj = {}
 
     # for propToAvg in arrObjs:
@@ -70,10 +71,19 @@ def avgObject(arrObjs):
 
     # return avgObj
 
-    return {
-        "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
-        # "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
-    }
+    if isGroundwater:
+        def avgFun(arrObjs):
+            return {
+                "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
+            }
+    else:
+        def avgFun(arrObjs):
+            return {
+                "UnmetDemand": avgArrOfArr([ obj["UnmetDemand"] for obj in arrObjs]),
+                "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
+            }
+
+    return avgFun
 
 # function flatten(arr) {  
 #   return [].concat.apply([], arr)
@@ -306,31 +316,43 @@ with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes
     temporal_bl_object = ujson.load(temporal_file_bl)
 
     new_fs = [f for f in region_object["features"] if f["properties"]["DU_ID"] and f["properties"]["DU_ID"] in temporal_object]
+    
+    tot_areas = {}
+    
+    for f in new_fs:
+        idd = f["properties"]["DU_ID"]
+
+        if idd not in tot_areas:
+            tot_areas[idd] = 0
+
+        tot_areas[idd] += area.area(f["geometry"]) / 6e8
+
 
     for f in new_fs:
         idd = f["properties"]["DU_ID"]
-        f["properties"]["Difference"] = [temporal_object[idd][i] - temporal_bl_object[idd][i] for i in temporal_object[idd]]
+        rea = area.area(f["geometry"]) / 6e8
+        f["properties"]["UnmetDemand"] = [(temporal_object[idd][i]) / rea for i in temporal_object[idd]]
+        f["properties"]["Difference"] = [(temporal_object[idd][i] - temporal_bl_object[idd][i]) / rea for i in temporal_object[idd]]
 
     region_object["features"] = new_fs
 
         
-    with open("difference_hex_small.json", "w") as outfile:
+    with open("diff_unmet_hex_small_norm.json", "w") as outfile:
 
-        hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
+        hex_object = geojsonToHexPoints(region_object["features"], avgObject(isGroundwater=False), [5, 5])
 
         ujson.dump(hex_object, outfile)
 
-# # Opening JSON file
-# with open("../Baseline_Groundwater.json") as region_file:
+# Opening JSON file
+with open("../Baseline_Groundwater.json") as region_file:
  
-#     # Reading from json file
-#     region_object = ujson.load(region_file)
+    # Reading from json file
+    region_object = ujson.load(region_file)
 
         
-#     with open("groundwater_hex_small.json", "w") as outfile:
+    with open("groundwater_hex_small_norm.json", "w") as outfile:
 
-#         hex_object = geojsonToHexPoints(region_object["features"], avgObject, [5, 5])
+        hex_object = geojsonToHexPoints(region_object["features"], avgObject(isGroundwater=True), [5, 5])
 
-#         ujson.dump(hex_object, outfile)
-
+        ujson.dump(hex_object, outfile)
     
