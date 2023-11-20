@@ -34,6 +34,98 @@ const INITIAL_VIEW_STATE = {
 //   bearing: 40.9
 // }
 
+const RGBtoHSV= function(color) {
+  let r,g,b,h,s,v;
+  r= color[0];
+  g= color[1];
+  b= color[2];
+  let minn = Math.min( r, g, b );
+  let maxx = Math.max( r, g, b );
+
+
+  v = maxx;
+  let delta = maxx - minn;
+  if( maxx != 0 )
+      s = delta / maxx;        // s
+  else {
+      // r = g = b = 0        // s = 0, v is undefined
+      s = 0;
+      h = -1;
+      return [h, s, undefined];
+  }
+  if( r === maxx )
+      h = ( g - b ) / delta;      // between yellow & magenta
+  else if( g === maxx )
+      h = 2 + ( b - r ) / delta;  // between cyan & yellow
+  else
+      h = 4 + ( r - g ) / delta;  // between magenta & cyan
+  h *= 60;                // degrees
+  if( h < 0 )
+      h += 360;
+  if ( isNaN(h) )
+      h = 0;
+  return [h,s,v];
+};
+
+const HSVtoRGB= function(color) {
+  let i;
+  let h,s,v,r,g,b;
+  h= color[0];
+  s= color[1];
+  v= color[2];
+  if(s === 0 ) {
+      // achromatic (grey)
+      r = g = b = v;
+      return [r,g,b];
+  }
+  h /= 60;            // sector 0 to 5
+  i = Math.floor( h );
+  let f = h - i;          // factorial part of h
+  let p = v * ( 1 - s );
+  let q = v * ( 1 - s * f );
+  let t = v * ( 1 - s * ( 1 - f ) );
+  switch( i ) {
+      case 0:
+          r = v;
+          g = t;
+          b = p;
+          break;
+      case 1:
+          r = q;
+          g = v;
+          b = p;
+          break;
+      case 2:
+          r = p;
+          g = v;
+          b = t;
+          break;
+      case 3:
+          r = p;
+          g = q;
+          b = v;
+          break;
+      case 4:
+          r = t;
+          g = p;
+          b = v;
+          break;
+      default:        // case 5:
+          r = v;
+          g = p;
+          b = q;
+          break;
+  }
+  return [r,g,b];
+}
+
+const saturate = col => {
+  let hsv= RGBtoHSV (col);
+  hsv[1] *= 2;
+  let rgb= HSVtoRGB(hsv);
+  return rgb
+}
+
 const colorInterp = (unmetDemand) => interpolateReds(
   scaleLinear().domain([-250, 10]).range([1, 0])(unmetDemand)
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
@@ -43,13 +135,13 @@ const valueInterp = scaleLinear()
   .range([1, 0])
   .clamp(true)
 
-const colorInterpGW = (groundwater) => interpolateBlues(
+const colorInterpGW = (groundwater) => saturate(interpolateBlues(
   scaleLinear().domain([-250, 700]).range([0, 1])(groundwater)
-).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
+).replace(/[^\d,]/g, '').split(',').map(d => Number(d)))
 
 const colorInterpDifference = (unmetDemand) => d3.interpolate(interpolatePRGn(
   scaleLinear().domain([-50, 50]).range([0, 1])(unmetDemand)
-), 'white')(0).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
+), 'white')(0.5).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
 const valueInterpDifference = scaleLinear()
 .domain([-50, 50])
@@ -141,7 +233,7 @@ export default function App({mapStyle = MAP_STYLE}) {
     //   thicknessRange: [0, 1],
     //   filled: true,
     //   resolution: curRes,
-    //   getFillColor: d => colorInterpDifference(d.properties.Difference[counter % 1200]),
+    //   getFillColor: d => colorInterpDifference(d.properties.Difference[1197]),
     //   updateTriggers: {
     //     getFillColor: [counter]
     //   }
@@ -164,11 +256,11 @@ export default function App({mapStyle = MAP_STYLE}) {
       extruded: true,
       getElevation: (d, i) => elevScale(d.properties.Elevation),
       resolution: curRes,
-      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[counter % 1200]) : [0, 0, 0, 0],
+      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[1197]) : [0, 0, 0, 0],
       opacity: 0.9,
-      updateTriggers: {
-        getFillColor: [counter],
-      },
+      // updateTriggers: {
+      //   getFillColor: [counter],
+      // },
     }),
     new SolidHexTileLayer({
       id: `GroundwaterLayerHex`,
@@ -178,11 +270,11 @@ export default function App({mapStyle = MAP_STYLE}) {
       raised: true,
       getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
       resolution: curRes,
-      getFillColor: d => colorInterpGW(d.properties.Groundwater[counter % 1200]),
+      getFillColor: d => colorInterpGW(d.properties.Groundwater[1197]),
       // opacity: 0.9,
-      updateTriggers: {
-        getFillColor: [counter],
-      },
+      // updateTriggers: {
+      //   getFillColor: [counter],
+      // },
     }),
     new IconHexTileLayer({
       id: `UnmetDemandIcons`,
@@ -200,12 +292,12 @@ export default function App({mapStyle = MAP_STYLE}) {
       getElevation: d => elevScale(d.properties.Elevation) + 1000,
       resolution: curRes,
       getColor: d => [232, 72, 72],
-      getValue: d => valueInterp(d.properties.UnmetDemand[counter % 1200]),
+      getValue: d => valueInterp(d.properties.UnmetDemand[1197]),
       sizeScale: 3000,
       // opacity: 0.9,
-      updateTriggers: {
-        getValue: [counter],
-      },
+      // updateTriggers: {
+      //   getValue: [counter],
+      // },
     }),
   ];
 
@@ -223,7 +315,7 @@ export default function App({mapStyle = MAP_STYLE}) {
       >
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
-      <span style={{ position: 'absolute', display: 'block', top: 0, right: 0 }}>Month { counter }</span>
+      {/* <span style={{ position: 'absolute', display: 'block', top: 0, right: 0 }}>Month { counter }</span> */}
     </>
   );
 }
