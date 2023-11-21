@@ -81,6 +81,7 @@ def avgObject(isGroundwater):
             return {
                 "UnmetDemand": avgArrOfArr([ obj["UnmetDemand"] for obj in arrObjs]),
                 "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
+                "LandUse": round(avg([ obj["LandUse"] for obj in arrObjs])),
             }
 
     return avgFun
@@ -284,6 +285,14 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
 
     return resPoints
 
+def idToVal(idStr):
+    lastPart = idStr[-2:]
+    if lastPar = "SA" or lastPar = "XA" or lastPar = "PA" or lastPar = "NA":
+        return 0
+    if lastPar = "SU" or lastPar = "PU" or lastPar = "NU":
+        return 1
+    return 2
+
 # /**
 #  * 
 #  * returns array of array of hexids and avgProperty, ordered by resolution
@@ -330,9 +339,10 @@ with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes
 
     for f in new_fs:
         idd = f["properties"]["DU_ID"]
-        rea = area.area(f["geometry"]) / 6e8
+        rea = tot_areas[idd]
         f["properties"]["UnmetDemand"] = [(temporal_object[idd][i]) / rea for i in temporal_object[idd]]
         f["properties"]["Difference"] = [(temporal_object[idd][i] - temporal_bl_object[idd][i]) / rea for i in temporal_object[idd]]
+        f["properties"]["LandUse"] = idToVal(idd)
 
     region_object["features"] = new_fs
 
