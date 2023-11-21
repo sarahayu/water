@@ -46,7 +46,7 @@ export default class IconHexTileLayer extends CompositeLayer {
       .range(d3.range(0, hextiles.length))(this.props.resolution)
     let curRes = d3.scaleQuantize()
       .domain([0, 1])
-      .range(this.props.resRange)(this.props.resolution)
+      .range(d3.range(this.props.resRange[0], this.props.resRange[1] + 1))(this.props.resolution)
     
     // console.log(resIdx)
 
