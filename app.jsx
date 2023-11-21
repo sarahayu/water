@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SolidHexTileLayer from './SolidHexTileLayer'
 import IconHexTileLayer from './IconHexTileLayer'
-import allData from './process/combine_hex_small_norm.json'
+import allData from './process/wildfire_hex_res.json'
 // import groundwaterData from './Baseline_Groundwater.json'
 // import diffUnmetData from './process/diff_unmet_geo_norm_right.json'
 import { Map } from 'react-map-gl';
@@ -31,9 +31,9 @@ import { Noise } from 'noisejs';
 //   'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/geojson/vancouver-blocks.json'; // eslint-disable-line
 
 const INITIAL_VIEW_STATE = {
-  longitude: -120.52,
-  latitude: 37.14,
-  zoom: 7.87,
+  longitude: -119.939850893,
+  latitude: 37.904210655,
+  zoom: 10,
   pitch: 50.85,
   bearing: 32.58
 }
@@ -146,6 +146,14 @@ const valueInterp = scaleLinear()
   .range([1, 0])
   .clamp(true)
 
+const colorInterpPower = (firepower) => saturate(interpolateReds(
+  scaleLinear().domain([0, 300]).range([0, 1])(firepower)
+).replace(/[^\d,]/g, '').split(',').map(d => Number(d)))
+
+const colorInterpConf = (conf) => saturate(d3.interpolateGreys(
+  scaleLinear().domain([0, 100]).range([0, 1])(conf)
+).replace(/[^\d,]/g, '').split(',').map(d => Number(d)))
+
 const colorInterpGW = (groundwater) => saturate(interpolateBlues(
   scaleLinear().domain([-250, 700]).range([0, 1])(groundwater)
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d)))
@@ -160,7 +168,7 @@ const valueInterpDifference = scaleLinear()
 .clamp(true)
 
 const resScale = scaleLinear()
-  .domain([INITIAL_VIEW_STATE.zoom - 1, INITIAL_VIEW_STATE.zoom + 2])
+  .domain([INITIAL_VIEW_STATE.zoom - 1, INITIAL_VIEW_STATE.zoom + 4])
   .range([0, 1])
   .clamp(true)
 
@@ -217,9 +225,9 @@ function getTooltip({object}) {
   );
 }
 
-const _elevScale = d3.scaleLinear(d3.extent(Object.values(allData[allData.length - 1]).map(e => e.Elevation)), [0, 50000])
+const _elevScale = d3.scaleLinear(d3.extent(Object.values(allData[allData.length - 1]).map(e => e.Elevation)), [0, 1500])
 
-const elevScale = elev => Math.min(_elevScale(elev), 20000)
+const elevScale = _elevScale //elev => Math.min(_elevScale(elev), 200)
 
 export default function App({mapStyle = newStyle}) {
   const [effects] = useState(() => {
@@ -236,97 +244,38 @@ export default function App({mapStyle = newStyle}) {
   
   let curRes = resScale(curZoom)
   const layers = [
-    // new GeoJsonLayer({
-    //   id: 'geojson',
-    //   data: groundwaterData,
-    //   opacity: 0.9,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => colorInterpGW(f.properties.Groundwater[1026]),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
-    // new GeoJsonLayer({
-    //   id: 'geojson2',
-    //   data: diffUnmetData,
-    //   opacity: 0.3,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => colorInterp(f.properties.UnmetDemand[1026]),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
-    // new GeoJsonLayer({
-    //   id: 'geojson3',
-    //   data: diffUnmetData,
-    //   opacity: 0.3,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => colorInterpDifference(f.properties.Difference[1026]),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
-
-    // new SolidHexTileLayer({
-    //   id: `DifferenceLayerHex`,
-    //   data: difnorm,
-    //   thicknessRange: [0, 1],
-    //   filled: true,
-    //   resolution: curRes,
-    //   getFillColor: d => colorInterpDifference(d.properties.Difference[1026]),
-    //   updateTriggers: {
-    //     getFillColor: [counter]
-    //   }
-    //   // opacity: 0.9,
-    // }),
-
 
     new SolidHexTileLayer({
-      id: `DifferenceLayerHex`,
-      data: allData.map(reses => {
-        let newReses = {}
-        for (let hexId in reses) {
-          if (reses[hexId].Difference) 
-            newReses[hexId] = reses[hexId]
-        }
-        return newReses
-      }),
+      id: `PowerLayer`,
+      data: allData,
       thicknessRange: [0, 1],
       filled: true,
       extruded: true,
       getElevation: (d, i) => elevScale(d.properties.Elevation),
+      getValue: (d, i) => d.properties.confidence / 100,
       resolution: curRes,
-      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[1026]) : [0, 0, 0, 0],
-      resRange: [5, 5],
+      getFillColor: d => colorInterpPower(d.properties.power),
+      resRange: [7, 9],
       opacity: 0.9,
-      updateTriggers: {
-        getFillColor: [counter],
-      },
+      // updateTriggers: {
+      //   getFillColor: [counter],
+      // },
     }),
-    new SolidHexTileLayer({
-      id: `GroundwaterLayerHex`,
-      data: allData,
-      thicknessRange: [0.65, 0.80],
-      filled: true,
-      raised: true,
-      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
-      resolution: curRes,
-      getFillColor: d => colorInterpGW(d.properties.Groundwater[1026]),
-      resRange: [5, 5],
-      // opacity: 0.9,
-      updateTriggers: {
-        getFillColor: [counter],
-      },
-    }),
+    // new SolidHexTileLayer({
+    //   id: `ConfidenceLayer`,
+    //   data: allData,
+    //   thicknessRange: [0.65, 0.80],
+    //   filled: true,
+    //   raised: true,
+    //   getElevation: d => elevScale(d.properties.Elevation) + 10,
+    //   resolution: curRes,
+    //   getFillColor: d => colorInterpConf(d.properties.confidence),
+    //   resRange: [7, 9],
+    //   // opacity: 0.9,
+    //   // updateTriggers: {
+    //   //   getFillColor: [counter],
+    //   // },
+    // }),
     // new IconHexTileLayer({
     //   id: `UnmetDemandIcons`,
     //   data: allData.map(reses => {
@@ -351,71 +300,6 @@ export default function App({mapStyle = newStyle}) {
     //     getValue: [counter],
     //   },
     // }),
-
-    
-    new IconHexTileLayer({
-      id: `AgIcons`,
-      data: allData.map(reses => {
-        let newReses = {}
-        for (let hexId in reses) {
-          if (reses[hexId].LandUse == 0) 
-            newReses[hexId] = reses[hexId]
-        }
-        return newReses
-      }),
-      loaders: [OBJLoader],
-      mesh: './wheelbarrow.obj',
-      raised: true,
-      getElevation: d => elevScale(d.properties.Elevation) + 1000,
-      resolution: curRes,
-      getColor: d => [0, 255, 0],
-      getValue: d => 0,
-      sizeScale: 5000,
-      resRange: [5, 5],
-      // opacity: 0.9,
-    }),
-    new IconHexTileLayer({
-      id: `UrbanIcons`,
-      data: allData.map(reses => {
-        let newReses = {}
-        for (let hexId in reses) {
-          if (reses[hexId].LandUse == 1) 
-            newReses[hexId] = reses[hexId]
-        }
-        return newReses
-      }),
-      loaders: [OBJLoader],
-      mesh: './urban.obj',
-      raised: true,
-      getElevation: d => elevScale(d.properties.Elevation) + 1000,
-      resolution: curRes,
-      getColor: d => [100, 100, 100],
-      getValue: d => 0,
-      sizeScale: 100,
-      resRange: [5, 5],
-      // opacity: 0.9,
-    }),
-    new IconHexTileLayer({
-      id: `WetlandIcons`,
-      data: allData.map(reses => {
-        let newReses = {}
-        for (let hexId in reses) {
-          if (reses[hexId].LandUse == 2) 
-            newReses[hexId] = reses[hexId]
-        }
-        return newReses
-      }),
-      loaders: [OBJLoader],
-      mesh: './drop.obj',
-      raised: true,
-      getElevation: d => elevScale(d.properties.Elevation) + 1000,
-      resolution: curRes,
-      getColor: d => [150, 75, 0],
-      getValue: d => 0,
-      sizeScale: 3000,
-      resRange: [5, 5],
-      // opacity: 0.9,
-    }),
   ];
 
   return (
