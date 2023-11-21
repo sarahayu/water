@@ -1,6 +1,6 @@
 
 import { CompositeLayer, SolidPolygonLayer } from "deck.gl"
-import * as d3Geo from 'd3-geo'
+import * as d3 from 'd3'
 import * as h3 from 'h3-js'
 import { lerp } from '@math.gl/core'
 
@@ -52,7 +52,12 @@ export default class SolidHexTileLayer extends CompositeLayer {
     if (!hextiles) return
 
     let polygons = []
-    let resHex = hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)]
+    let resIdx = d3.scaleQuantize()
+      .domain([0, 1])
+      .range([0, hextiles.length - 1])(this.props.resolution)
+
+    console.log(hextiles.length)
+    let resHex = hextiles[resIdx]
 
     Object.keys(resHex).forEach(hexId => {
 

@@ -7,13 +7,24 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SolidHexTileLayer from './SolidHexTileLayer'
 import IconHexTileLayer from './IconHexTileLayer'
-import allData from './process/combine_hex_small_norm.json'
-// import diffUnmetData from './process/diff_unmet_geo_unnorm.json'
+import allData from './process/combine_hex_small_highres_norm.json'
+// import groundwaterData from './Baseline_Groundwater.json'
+// import diffUnmetData from './process/diff_unmet_geo_norm_right.json'
 import { Map } from 'react-map-gl';
 import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
 import * as d3 from 'd3';
 import { scaleLinear } from 'd3-scale';
+import newStyle from './style.json'
 import { Noise } from 'noisejs';
+
+// newStyle.layers.forEach(layer => {
+//   let idd = layer.id
+//   let isLabel = /label|place|poi/.test(idd)
+//   if (isLabel) {
+//     layer.paint["z-index"] = "1000"
+//   }
+
+// })
 
 // Source data GeoJSON
 // const DATA_URL =
@@ -149,7 +160,7 @@ const valueInterpDifference = scaleLinear()
 .clamp(true)
 
 const resScale = scaleLinear()
-  .domain([INITIAL_VIEW_STATE.zoom, INITIAL_VIEW_STATE.zoom + 2])
+  .domain([INITIAL_VIEW_STATE.zoom - 1, INITIAL_VIEW_STATE.zoom + 2])
   .range([0, 1])
   .clamp(true)
 
@@ -171,8 +182,6 @@ const COLOR_SCALE = scaleLinear()
   [189, 0, 38],
   [128, 0, 38]
 ]);
-
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
 const ambientLight = new AmbientLight({
   color: [255, 255, 255],
@@ -212,7 +221,7 @@ const _elevScale = d3.scaleLinear(d3.extent(Object.values(allData[allData.length
 
 const elevScale = elev => Math.min(_elevScale(elev), 20000)
 
-export default function App({mapStyle = MAP_STYLE}) {
+export default function App({mapStyle = newStyle}) {
   const [effects] = useState(() => {
     const lightingEffect = new LightingEffect({ambientLight, dirLight});
     lightingEffect.shadowColor = [0, 0, 0, 0.5];
@@ -227,13 +236,53 @@ export default function App({mapStyle = MAP_STYLE}) {
   
   let curRes = resScale(curZoom)
   const layers = [
+    // new GeoJsonLayer({
+    //   id: 'geojson',
+    //   data: groundwaterData,
+    //   opacity: 0.9,
+    //   stroked: false,
+    //   filled: true,
+    //   // extruded: true,
+    //   wireframe: true,
+    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
+    //   getFillColor: f => colorInterpGW(f.properties.Groundwater[1026]),
+    //   getLineColor: [255, 255, 255],
+    //   pickable: true
+    // }),
+    // new GeoJsonLayer({
+    //   id: 'geojson2',
+    //   data: diffUnmetData,
+    //   opacity: 0.3,
+    //   stroked: false,
+    //   filled: true,
+    //   // extruded: true,
+    //   wireframe: true,
+    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
+    //   getFillColor: f => colorInterp(f.properties.UnmetDemand[1026]),
+    //   getLineColor: [255, 255, 255],
+    //   pickable: true
+    // }),
+    // new GeoJsonLayer({
+    //   id: 'geojson3',
+    //   data: diffUnmetData,
+    //   opacity: 0.3,
+    //   stroked: false,
+    //   filled: true,
+    //   // extruded: true,
+    //   wireframe: true,
+    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
+    //   getFillColor: f => colorInterpDifference(f.properties.Difference[1026]),
+    //   getLineColor: [255, 255, 255],
+    //   pickable: true
+    // }),
+
     // new SolidHexTileLayer({
     //   id: `DifferenceLayerHex`,
     //   data: difnorm,
     //   thicknessRange: [0, 1],
     //   filled: true,
     //   resolution: curRes,
-    //   getFillColor: d => colorInterpDifference(d.properties.Difference[1197]),
+    //   getFillColor: d => colorInterpDifference(d.properties.Difference[1026]),
     //   updateTriggers: {
     //     getFillColor: [counter]
     //   }
@@ -256,11 +305,12 @@ export default function App({mapStyle = MAP_STYLE}) {
       extruded: true,
       getElevation: (d, i) => elevScale(d.properties.Elevation),
       resolution: curRes,
-      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[1197]) : [0, 0, 0, 0],
+      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[counter % 1200]) : [0, 0, 0, 0],
+      resRange: [5, 6],
       opacity: 0.9,
-      // updateTriggers: {
-      //   getFillColor: [counter],
-      // },
+      updateTriggers: {
+        getFillColor: [counter],
+      },
     }),
     new SolidHexTileLayer({
       id: `GroundwaterLayerHex`,
@@ -270,11 +320,12 @@ export default function App({mapStyle = MAP_STYLE}) {
       raised: true,
       getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
       resolution: curRes,
-      getFillColor: d => colorInterpGW(d.properties.Groundwater[1197]),
+      getFillColor: d => colorInterpGW(d.properties.Groundwater[counter % 1200]),
+      resRange: [5, 6],
       // opacity: 0.9,
-      // updateTriggers: {
-      //   getFillColor: [counter],
-      // },
+      updateTriggers: {
+        getFillColor: [counter],
+      },
     }),
     new IconHexTileLayer({
       id: `UnmetDemandIcons`,
@@ -292,12 +343,13 @@ export default function App({mapStyle = MAP_STYLE}) {
       getElevation: d => elevScale(d.properties.Elevation) + 1000,
       resolution: curRes,
       getColor: d => [232, 72, 72],
-      getValue: d => valueInterp(d.properties.UnmetDemand[1197]),
+      getValue: d => valueInterp(d.properties.UnmetDemand[counter % 1200]),
       sizeScale: 3000,
+      resRange: [5, 6],
       // opacity: 0.9,
-      // updateTriggers: {
-      //   getValue: [counter],
-      // },
+      updateTriggers: {
+        getValue: [counter],
+      },
     }),
   ];
 
@@ -315,7 +367,7 @@ export default function App({mapStyle = MAP_STYLE}) {
       >
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
-      {/* <span style={{ position: 'absolute', display: 'block', top: 0, right: 0 }}>Month { counter }</span> */}
+      <span style={{ position: 'absolute', display: 'block', top: 0, right: 0 }}>Month { counter }</span>
     </>
   );
 }

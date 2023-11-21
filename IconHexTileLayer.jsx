@@ -5,14 +5,14 @@ import * as h3 from 'h3-js'
 import * as d3 from 'd3'
 import { lerp } from '@math.gl/core'
 
-const FORMATIONS = [    
-    /* dot          */ [[0, 0]],
-    /* line         */ [[0, 0.33], [0, -0.33]],
-    /* triangle     */ [[-0.33, -0.33], [0.33, -0.33], [0, 0.29]],
-    /* square       */ [[-0.33, -0.33], [0.33, -0.33], [-0.33, 0.33], [0.33, 0.33]],
-    /* house        */ [[-0.33, -0.67], [0.33, -0.67], [-0.33, 0], [0.33, 0], [0, 0.58]],
-    /* rectangle    */ [[-0.33, -0.67], [0.33, -0.67], [-0.33, 0], [0.33, 0], [-0.33, 0.67], [0.33, 0.67]],
-    /* hexagon      */ [[0, 0], [-0.67, 0], [0.67, 0], [-0.33, 0.58], [0.33, 0.58], [-0.33, -0.58], [0.33, -0.58]],
+const FORMATIONS = [
+    /* dot          */[[0, 0]],
+    /* line         */[[0, 0.33], [0, -0.33]],
+    /* triangle     */[[-0.33, -0.33], [0.33, -0.33], [0, 0.29]],
+    /* square       */[[-0.33, -0.33], [0.33, -0.33], [-0.33, 0.33], [0.33, 0.33]],
+    /* house        */[[-0.33, -0.67], [0.33, -0.67], [-0.33, 0], [0.33, 0], [0, 0.58]],
+    /* rectangle    */[[-0.33, -0.67], [0.33, -0.67], [-0.33, 0], [0.33, 0], [-0.33, 0.67], [0.33, 0.67]],
+    /* hexagon      */[[0, 0], [-0.67, 0], [0.67, 0], [-0.33, 0.58], [0.33, 0.58], [-0.33, -0.58], [0.33, -0.58]],
 ]
 
 // -- icon layer
@@ -21,8 +21,8 @@ const FORMATIONS = [
 // - macarthur email about timesheet
 
 const formationInterp = d3.scaleQuantize()
-    .domain([0, 1])
-    .range(FORMATIONS);
+  .domain([0, 1])
+  .range(FORMATIONS);
 
 export default class IconHexTileLayer extends CompositeLayer {
 
@@ -33,77 +33,85 @@ export default class IconHexTileLayer extends CompositeLayer {
     })
   }
 
-    renderLayers() {
+  renderLayers() {
 
-      const { hextiles } = this.state
+    const { hextiles } = this.state
 
-      if (!hextiles) return
+    if (!hextiles) return
 
-        let data = []
-        let resHex = hextiles[Math.floor((hextiles.length - 1) * this.props.resolution)]
-        let curRes = d3.scaleQuantize()
-          .domain([0, 1])
-          .range(this.props.resRange)(this.props.resolution)
-        const edgeLen = h3.getHexagonEdgeLengthAvg(curRes, h3.UNITS.km) / 250 * 1.75
-        let iconScale = h3.getHexagonEdgeLengthAvg(curRes, h3.UNITS.km) / h3.getHexagonEdgeLengthAvg(this.props.resRange[0], h3.UNITS.km)
+    let data = []
+
+    let resIdx = d3.scaleQuantize()
+      .domain([0, 1])
+      .range([0, hextiles.length - 1])(this.props.resolution)
+    let curRes = d3.scaleQuantize()
+      .domain([0, 1])
+      .range(this.props.resRange)(this.props.resolution)
     
+    // console.log(resIdx)
 
-        Object.keys(resHex).forEach(hexID => {
-            let properties = resHex[hexID]
+    let resHex = hextiles[resIdx]
+    const edgeLen = h3.getHexagonEdgeLengthAvg(curRes, h3.UNITS.km) / 250 * 1.75
+    let iconScale = h3.getHexagonEdgeLengthAvg(curRes, h3.UNITS.km) / h3.getHexagonEdgeLengthAvg(this.props.resRange[0], h3.UNITS.km)
 
-            const [y, x] = h3.cellToLatLng(hexID)
+    // console.log(iconScale)
 
-            for (let [dx, dy] of formationInterp(this.props.getValue({ properties }))) {
+    Object.keys(resHex).forEach(hexID => {
+      let properties = resHex[hexID]
 
-              let [ddx, ddy] = this.props.offset
-                if (this.props.raised)
-                data.push({
-                  position: [x + dx * edgeLen + ddx * edgeLen, y + dy * edgeLen + ddy * edgeLen, this.props.getElevation({ properties })],
-                  properties,
-                })
-              else
-                data.push({
-                  position: [x + dx * edgeLen + ddx * edgeLen, y + dy * edgeLen + ddy * edgeLen],
-                  properties,
-                })
-            }
+      const [y, x] = h3.cellToLatLng(hexID)
 
-        })
+      for (let [dx, dy] of formationInterp(this.props.getValue({ properties }))) {
 
-        return [
-          new SimpleMeshLayer({
-            id: `${this.props.id}IconHexTileLayer`,
-            data,
-            getPosition: d => d.position,
-            
-            mesh: this.props.mesh,
-            texture: this.props.texture,
-            sizeScale: this.props.sizeScale,
-            wireframe: this.props.wireframe,
-            material: this.props.material,
-            getColor: this.props.getColor,
-            getOrientation: this.props.getOrientation,
-            getScale: this.props.getScale,
-            getTranslation: this.props.getTranslation,
-            getTransformMatrix: this.props.getTransformMatrix,
-            textureParameters: this.props.textureParameters,
-            
-            /* props inherited from Layer class */
-            
-            autoHighlight: this.props.autoHighlight,
-            coordinateOrigin: this.props.coordinateOrigin,
-            coordinateSystem: this.props.coordinateSystem,
-            highlightColor: this.props.highlightColor,
-            loaders: this.props.loaders,
-            modelMatrix: this.props.modelMatrix,
-            opacity: this.props.opacity,
-            pickable: this.props.pickable,
-            visible: this.props.visible,
-            wrapLongitude: this.props.wrapLongitude,
-            updateTriggers: this.props.updateTriggers,
-          }),
-        ]
-    }
+        let [ddx, ddy] = this.props.offset
+        if (this.props.raised)
+          data.push({
+            position: [x + dx * edgeLen + ddx * edgeLen, y + dy * edgeLen + ddy * edgeLen, this.props.getElevation({ properties })],
+            properties,
+          })
+        else
+          data.push({
+            position: [x + dx * edgeLen + ddx * edgeLen, y + dy * edgeLen + ddy * edgeLen],
+            properties,
+          })
+      }
+
+    })
+
+    return [
+      new SimpleMeshLayer({
+        id: `${this.props.id}IconHexTileLayer`,
+        data,
+        getPosition: d => d.position,
+
+        mesh: this.props.mesh,
+        texture: this.props.texture,
+        sizeScale: this.props.sizeScale * iconScale,
+        wireframe: this.props.wireframe,
+        material: this.props.material,
+        getColor: this.props.getColor,
+        getOrientation: this.props.getOrientation,
+        getScale: this.props.getScale,
+        getTranslation: this.props.getTranslation,
+        getTransformMatrix: this.props.getTransformMatrix,
+        textureParameters: this.props.textureParameters,
+
+        /* props inherited from Layer class */
+
+        autoHighlight: this.props.autoHighlight,
+        coordinateOrigin: this.props.coordinateOrigin,
+        coordinateSystem: this.props.coordinateSystem,
+        highlightColor: this.props.highlightColor,
+        loaders: this.props.loaders,
+        modelMatrix: this.props.modelMatrix,
+        opacity: this.props.opacity,
+        pickable: this.props.pickable,
+        visible: this.props.visible,
+        wrapLongitude: this.props.wrapLongitude,
+        updateTriggers: this.props.updateTriggers,
+      }),
+    ]
+  }
 }
 
 IconHexTileLayer.layerName = 'IconHexTileLayer'
