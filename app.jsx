@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SolidHexTileLayer from './SolidHexTileLayer'
 import IconHexTileLayer from './IconHexTileLayer'
-import allData from './process/combine_hex_small_highres_norm.json'
+import allData from './process/combine_hex_small_norm.json'
 // import groundwaterData from './Baseline_Groundwater.json'
 // import diffUnmetData from './process/diff_unmet_geo_norm_right.json'
 import { Map } from 'react-map-gl';
@@ -305,8 +305,8 @@ export default function App({mapStyle = newStyle}) {
       extruded: true,
       getElevation: (d, i) => elevScale(d.properties.Elevation),
       resolution: curRes,
-      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[counter % 1200]) : [0, 0, 0, 0],
-      resRange: [5, 6],
+      getFillColor: d => d.properties.Difference ? colorInterpDifference(d.properties.Difference[1026]) : [0, 0, 0, 0],
+      resRange: [5, 5],
       opacity: 0.9,
       updateTriggers: {
         getFillColor: [counter],
@@ -320,19 +320,87 @@ export default function App({mapStyle = newStyle}) {
       raised: true,
       getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
       resolution: curRes,
-      getFillColor: d => colorInterpGW(d.properties.Groundwater[counter % 1200]),
-      resRange: [5, 6],
+      getFillColor: d => colorInterpGW(d.properties.Groundwater[1026]),
+      resRange: [5, 5],
       // opacity: 0.9,
       updateTriggers: {
         getFillColor: [counter],
       },
     }),
+    // new IconHexTileLayer({
+    //   id: `UnmetDemandIcons`,
+    //   data: allData.map(reses => {
+    //     let newReses = {}
+    //     for (let hexId in reses) {
+    //       if (reses[hexId].Difference) 
+    //         newReses[hexId] = reses[hexId]
+    //     }
+    //     return newReses
+    //   }),
+    //   loaders: [OBJLoader],
+    //   mesh: './drop.obj',
+    //   raised: true,
+    //   getElevation: d => elevScale(d.properties.Elevation) + 1000,
+    //   resolution: curRes,
+    //   getColor: d => [232, 72, 72],
+    //   getValue: d => valueInterp(d.properties.UnmetDemand[1026]),
+    //   sizeScale: 3000,
+    //   resRange: [5, 5],
+    //   // opacity: 0.9,
+    //   updateTriggers: {
+    //     getValue: [counter],
+    //   },
+    // }),
+
+    
     new IconHexTileLayer({
-      id: `UnmetDemandIcons`,
+      id: `AgIcons`,
       data: allData.map(reses => {
         let newReses = {}
         for (let hexId in reses) {
-          if (reses[hexId].Difference) 
+          if (reses[hexId].LandUse == 0) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './wheelbarrow.obj',
+      raised: true,
+      getElevation: d => elevScale(d.properties.Elevation) + 1000,
+      resolution: curRes,
+      getColor: d => [0, 255, 0],
+      getValue: d => 0,
+      sizeScale: 5000,
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `UrbanIcons`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse == 1) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './urban.obj',
+      raised: true,
+      getElevation: d => elevScale(d.properties.Elevation) + 1000,
+      resolution: curRes,
+      getColor: d => [100, 100, 100],
+      getValue: d => 0,
+      sizeScale: 100,
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `WetlandIcons`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse == 2) 
             newReses[hexId] = reses[hexId]
         }
         return newReses
@@ -342,14 +410,11 @@ export default function App({mapStyle = newStyle}) {
       raised: true,
       getElevation: d => elevScale(d.properties.Elevation) + 1000,
       resolution: curRes,
-      getColor: d => [232, 72, 72],
-      getValue: d => valueInterp(d.properties.UnmetDemand[counter % 1200]),
+      getColor: d => [150, 75, 0],
+      getValue: d => 0,
       sizeScale: 3000,
-      resRange: [5, 6],
+      resRange: [5, 5],
       // opacity: 0.9,
-      updateTriggers: {
-        getValue: [counter],
-      },
     }),
   ];
 
