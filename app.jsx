@@ -31,19 +31,12 @@ import { Noise } from 'noisejs';
 //   'https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/geojson/vancouver-blocks.json'; // eslint-disable-line
 
 const INITIAL_VIEW_STATE = {
-  longitude: -119.939850893,
-  latitude: 37.904210655,
-  zoom: 10,
-  pitch: 50.85,
-  bearing: 32.58
+  longitude: -119.99582643167989,
+  latitude: 37.88453894208306,
+  zoom: 10.364947995424346,
+  pitch: 49.903969287830776,
+  bearing: 28.126875,
 }
-// const INITIAL_VIEW_STATE = {
-//   longitude: -120.61,
-//   latitude: 37.63,
-//   zoom: 6.94,
-//   pitch: 15.95,
-//   bearing: 40.9
-// }
 
 const RGBtoHSV= function(color) {
   let r,g,b,h,s,v;
@@ -250,8 +243,8 @@ export default function App({mapStyle = newStyle}) {
       data: allData,
       thicknessRange: [0, 1],
       filled: true,
-      extruded: true,
-      getElevation: (d, i) => elevScale(d.properties.Elevation),
+      // extruded: true,
+      // getElevation: (d, i) => elevScale(d.properties.Elevation),
       getValue: (d, i) => d.properties.confidence / 100,
       resolution: curRes,
       getFillColor: d => colorInterpPower(d.properties.power),
@@ -310,7 +303,9 @@ export default function App({mapStyle = newStyle}) {
         initialViewState={INITIAL_VIEW_STATE}
         controller={true}
         onViewStateChange={({viewState}) => {
-          setCurZoom(viewState.zoom)}}
+          setCurZoom(viewState.zoom)
+          console.log(viewState)
+        }}
         // views={ new MapView({ orthographic: true }) }
         getTooltip={getTooltip}
       >
