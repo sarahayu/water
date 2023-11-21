@@ -54,7 +54,7 @@ export default class SolidHexTileLayer extends CompositeLayer {
     let polygons = []
     let resIdx = d3.scaleQuantize()
       .domain([0, 1])
-      .range([0, hextiles.length - 1])(this.props.resolution)
+      .range(d3.range(0, hextiles.length))(this.props.resolution)
 
     console.log(hextiles.length)
     let resHex = hextiles[resIdx]
@@ -63,7 +63,7 @@ export default class SolidHexTileLayer extends CompositeLayer {
 
       let properts = resHex[hexId]
 
-      let tilePolygon = calcPolyBorder(hexId, this.props.thicknessRange)
+      let tilePolygon = calcPolyBorder(hexId, [ this.props.getValue ? 1 - this.props.getValue({ properties: properts }) : this.props.thicknessRange[0], this.props.thicknessRange[1]])
 
       if (this.props.raised)
         polygons.push({
@@ -104,4 +104,5 @@ SolidHexTileLayer.defaultProps = {
   thicknessRange: [0.7, 0.9],
   resolution: 0,
   resRange: [5, 5],
+  getValue: undefined,
 }
