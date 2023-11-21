@@ -3,6 +3,9 @@ from functools import reduce
 import math
 import area
 from PIL import Image
+import random
+
+random.seed(10)
 
 def latlngToMerc(lat, lon):
     z = 5
@@ -235,6 +238,7 @@ def gridPointsToHexPoints(gridPoints, averageFn, resRange):
             avgObj = averageFn(binnedPoints[hexId])
 
             avgObj["Elevation"] = elev
+            avgObj["personnel"] = random.random() if random.random() < 0.15 else 0
             
             points[hexId] = avgObj
 

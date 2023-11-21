@@ -6,6 +6,7 @@ import * as d3 from 'd3'
 import { lerp } from '@math.gl/core'
 
 const FORMATIONS = [
+    /* nothing      */[],
     /* dot          */[[0, 0]],
     /* line         */[[0, 0.33], [0, -0.33]],
     /* triangle     */[[-0.33, -0.33], [0.33, -0.33], [0, 0.29]],
@@ -46,13 +47,13 @@ export default class IconHexTileLayer extends CompositeLayer {
       .range(d3.range(0, hextiles.length))(this.props.resolution)
     let curRes = d3.scaleQuantize()
       .domain([0, 1])
-      .range(this.props.resRange)(this.props.resolution)
+      .range(d3.range(this.props.resRange[0], this.props.resRange[1] + 1))(this.props.resolution)
     
     // console.log(resIdx)
 
     let resHex = hextiles[resIdx]
     const edgeLen = h3.getHexagonEdgeLengthAvg(curRes, h3.UNITS.km) / 250 * 1.75
-    let iconScale = h3.getHexagonEdgeLengthAvg(curRes, h3.UNITS.km) / h3.getHexagonEdgeLengthAvg(this.props.resRange[0], h3.UNITS.km)
+    let iconScale = h3.getHexagonEdgeLengthAvg(curRes, h3.UNITS.km) / h3.getHexagonEdgeLengthAvg(5, h3.UNITS.km)
 
     // console.log(iconScale)
 

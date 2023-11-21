@@ -269,30 +269,21 @@ export default function App({mapStyle = newStyle}) {
     //   //   getFillColor: [counter],
     //   // },
     // }),
-    // new IconHexTileLayer({
-    //   id: `UnmetDemandIcons`,
-    //   data: allData.map(reses => {
-    //     let newReses = {}
-    //     for (let hexId in reses) {
-    //       if (reses[hexId].Difference) 
-    //         newReses[hexId] = reses[hexId]
-    //     }
-    //     return newReses
-    //   }),
-    //   loaders: [OBJLoader],
-    //   mesh: './drop.obj',
-    //   raised: true,
-    //   getElevation: d => elevScale(d.properties.Elevation) + 1000,
-    //   resolution: curRes,
-    //   getColor: d => [232, 72, 72],
-    //   getValue: d => valueInterp(d.properties.UnmetDemand[1026]),
-    //   sizeScale: 3000,
-    //   resRange: [5, 5],
-    //   // opacity: 0.9,
-    //   updateTriggers: {
-    //     getValue: [counter],
-    //   },
-    // }),
+    new IconHexTileLayer({
+      id: `PersonnelIcons`,
+      data: allData,
+      loaders: [OBJLoader],
+      mesh: 'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/humanoid_quad.obj',
+      resolution: curRes,
+      getColor: d => [0, 188, 242],
+      getValue: d => d.properties.personnel,
+      sizeScale: 400,
+      resRange: [7, 9],
+      // opacity: 0.9,
+      // updateTriggers: {
+      //   getValue: [counter],
+      // },
+    }),
   ];
 
   return (
@@ -311,7 +302,7 @@ export default function App({mapStyle = newStyle}) {
       >
         <Map reuseMaps mapLib={maplibregl} mapStyle={mapStyle} preventStyleDiffing={true} />
       </DeckGL>
-      <span style={{ position: 'absolute', display: 'block', top: 0, right: 0 }}>Month { counter }</span>
+      {/* <span style={{ position: 'absolute', display: 'block', top: 0, right: 0 }}>Month { counter }</span> */}
     </>
   );
 }
