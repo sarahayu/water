@@ -63,27 +63,11 @@ def avgArrOfArr(arr):
 #   return avgObj
 # }
 
-def avgObject(isGroundwater):
-    # avgObj = {}
-
-    # for propToAvg in arrObjs:
-    #     avgObj[propToAvg] = avg([hexpoint[propToAvg] for hexpoint in arrObjs])
-
-    # return avgObj
-
-    if isGroundwater:
-        def avgFun(arrObjs):
-            return {
-                "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
-            }
-    else:
-        def avgFun(arrObjs):
-            return {
-                "UnmetDemand": avgArrOfArr([ obj["UnmetDemand"] for obj in arrObjs]),
-                "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
-            }
-
-    return avgFun
+def avgObject(arrObjs):
+    return {
+        "confidence": avg([ obj["confidence"] for obj in arrObjs]),
+        "power": avg([ float(obj["power"]) for obj in arrObjs]),
+    }
 
 # function flatten(arr) {  
 #   return [].concat.apply([], arr)
@@ -155,7 +139,7 @@ def polygonToPoints(dataFeature):
     # print(minLat)
     # print(maxLat)
 
-    scale = 10
+    scale = 100
     stepSize = 1 / scale
 
     poly = shapely.geometry.polygon.Polygon([(polycoord[0], polycoord[1]) for polycoord in flattenedCoords])
@@ -163,35 +147,6 @@ def polygonToPoints(dataFeature):
         for lon in range(int(scale * minLon), int(scale * (maxLon + 1)), int(scale * stepSize)):
             if geoContains(poly, [lon / scale, lat / scale]):
                 points.append([lon / scale, lat / scale])
-
-    return points
-
-# /**
-#  * 
-#  * returns array of points and properties
-#  * [[lat1, lon1, propInd1], [lat2, lon2, propInd2], ...]
-#  */
-# export function geojsonToGridPoints(dataFeatures) {
-#   let points = []
-
-#   dataFeatures.forEach(feature => {
-#     let regionPoints = polygonToPoints(feature)
-#     points.push(...regionPoints.map(coord => [...coord, feature.properties]))
-#   })
-
-#   return points
-# }
-
-def geojsonToGridPoints(dataFeatures):
-    points = []
-
-    ind = 0
-
-    for feature in dataFeatures:
-        regionPoints = polygonToPoints(feature)
-        # print(regionPoints)
-        points.extend([coord[0], coord[1], ind] for coord in regionPoints)
-        ind += 1
 
     return points
 
@@ -236,7 +191,7 @@ def geojsonToGridPoints(dataFeatures):
 #   return resPoints
 # }
 
-def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
+def gridPointsToHexPoints(gridPoints, averageFn, resRange):
     resPoints = []
 
     minRes, maxRes = resRange
@@ -249,14 +204,19 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
         binnedPoints = {}
 
         for point in gridPoints:
-            lat, lon = point[1], point[0]
+            lon, lat = point["centroid"]["coordinates"][0], point["centroid"]["coordinates"][1]
 
             hexId = h3.latlng_to_cell(lat, lon, res)
 
+            pointProps = {
+                "confidence": point["confidence"],
+                "power": point["power"],
+            }
+
             if hexId in binnedPoints:
-                binnedPoints[hexId].append(point[2])
+                binnedPoints[hexId].append(pointProps)
             else:
-                binnedPoints[hexId] = [ point[2] ]
+                binnedPoints[hexId] = [ pointProps ]
 
         points = {}
 
@@ -272,7 +232,7 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
             (r, g, b, _) = pixel_values[imwidth * y + x]
             elev = ((r * 256 + g * 1 + b * 1 / 256) - 32768)
             
-            avgObj = averageFn([dataFeatures[ind]["properties"] for ind in binnedPoints[hexId]])
+            avgObj = averageFn(binnedPoints[hexId])
 
             avgObj["Elevation"] = elev
             
@@ -283,76 +243,15 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
         resPoints.append(points)
 
     return resPoints
-
-# /**
-#  * 
-#  * returns array of array of hexids and avgProperty, ordered by resolution
-#  * [
-#  *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // lowest resolution, larger hexagons
-#  *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],
-#  *  [[hexId1, avgProperties1], [hexId2, avgProperties2], ...],    // highest resoultion, smaller hexagons
-#  * ]
-#  */
-# function geojsonToHexPoints(dataFeatures, avgFn, resRange) {
-#   let gridPoints = geojsonToGridPoints(dataFeatures)
-#   let hexPoints = gridPointsToHexPoints(gridPoints, avgFn, resRange)
-#   return hexPoints
-# }
-
-def geojsonToHexPoints(dataFeatures, avgFn, resRange):
-    gridPoints = geojsonToGridPoints(dataFeatures)
-    hexPoints = gridPointsToHexPoints(dataFeatures, gridPoints, avgFn, resRange)
-
-    return hexPoints
  
 # Opening JSON file
-with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes/demand_units") as region_file, \
-    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/bl_h000/unmetdemand") as temporal_file, \
-    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/CS3_BL/unmetdemand") as temporal_file_bl:
+with open("wildfire.json") as wildfire_file:
  
     # Reading from json file
-    region_object = ujson.load(region_file)
-    temporal_object = ujson.load(temporal_file)
-    temporal_bl_object = ujson.load(temporal_file_bl)
-
-    new_fs = [f for f in region_object["features"] if f["properties"]["DU_ID"] and f["properties"]["DU_ID"] in temporal_object]
-    
-    tot_areas = {}
-    
-    for f in new_fs:
-        idd = f["properties"]["DU_ID"]
-
-        if idd not in tot_areas:
-            tot_areas[idd] = 0
-
-        tot_areas[idd] += area.area(f["geometry"]) / 6e8
-
-
-    for f in new_fs:
-        idd = f["properties"]["DU_ID"]
-        rea = area.area(f["geometry"]) / 6e8
-        f["properties"]["UnmetDemand"] = [(temporal_object[idd][i]) / rea for i in temporal_object[idd]]
-        f["properties"]["Difference"] = [(temporal_object[idd][i] - temporal_bl_object[idd][i]) / rea for i in temporal_object[idd]]
-
-    region_object["features"] = new_fs
-
+    wildfire_arr = ujson.load(wildfire_file)
         
-    with open("diff_unmet_hex_small_norm.json", "w") as outfile:
+    with open("wildfire_hex_res.json", "w") as outfile:
 
-        hex_object = geojsonToHexPoints(region_object["features"], avgObject(isGroundwater=False), [5, 5])
+        hex_object = gridPointsToHexPoints(wildfire_arr, avgObject, [7, 9])
 
         ujson.dump(hex_object, outfile)
-
-# Opening JSON file
-with open("../Baseline_Groundwater.json") as region_file:
- 
-    # Reading from json file
-    region_object = ujson.load(region_file)
-
-        
-    with open("groundwater_hex_small_norm.json", "w") as outfile:
-
-        hex_object = geojsonToHexPoints(region_object["features"], avgObject(isGroundwater=True), [5, 5])
-
-        ujson.dump(hex_object, outfile)
-    
