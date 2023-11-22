@@ -7,9 +7,9 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import SolidHexTileLayer from './SolidHexTileLayer'
 import IconHexTileLayer from './IconHexTileLayer'
-import allData from './process/combine_hex_small_norm.json'
+import allData from './process/combine_hex_med_norm_mults2.json'
 // import groundwaterData from './Baseline_Groundwater.json'
-// import diffUnmetData from './process/diff_unmet_geo_norm_right.json'
+// import landuse from './process/landuse_geo_norm_mults.json'
 import { Map } from 'react-map-gl';
 import { interpolateBlues, interpolatePRGn, interpolateReds } from 'd3';
 import * as d3 from 'd3';
@@ -142,7 +142,7 @@ const colorInterp = (unmetDemand) => interpolateReds(
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
 const valueInterp = scaleLinear()
-  .domain([-250, 10])
+  .domain([-150, 10])
   .range([1, 0])
   .clamp(true)
 
@@ -221,6 +221,26 @@ const _elevScale = d3.scaleLinear(d3.extent(Object.values(allData[allData.length
 
 const elevScale = elev => Math.min(_elevScale(elev), 20000)
 
+function idToCol(idStr) {
+  // console.log(idStr)
+  // if (!idStr)
+  //   return [0, 0, 0]
+  //   let lastPart = idStr.substring(idStr.length - 2)
+  //   if (lastPart == "SA" || lastPart == "XA" || lastPart == "PA" || lastPart == "NA")
+  //       return [255, 0, 0]
+  //   if (lastPart == "SU" || lastPart == "PU" || lastPart == "NU") {
+  //     return [0, 0, 255]
+  //   }
+  //   return [0, 255, 0]
+
+  if (idStr == 0) 
+    return [255, 0, 0]
+  if (idStr == 1) 
+    return [0, 0, 255]
+
+  return [0, 255, 0]
+}
+
 export default function App({mapStyle = newStyle}) {
   const [effects] = useState(() => {
     const lightingEffect = new LightingEffect({ambientLight, dirLight});
@@ -236,46 +256,6 @@ export default function App({mapStyle = newStyle}) {
   
   let curRes = resScale(curZoom)
   const layers = [
-    // new GeoJsonLayer({
-    //   id: 'geojson',
-    //   data: groundwaterData,
-    //   opacity: 0.9,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => colorInterpGW(f.properties.Groundwater[1026]),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
-    // new GeoJsonLayer({
-    //   id: 'geojson2',
-    //   data: diffUnmetData,
-    //   opacity: 0.3,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => colorInterp(f.properties.UnmetDemand[1026]),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
-    // new GeoJsonLayer({
-    //   id: 'geojson3',
-    //   data: diffUnmetData,
-    //   opacity: 0.3,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => colorInterpDifference(f.properties.Difference[1026]),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
-
     // new SolidHexTileLayer({
     //   id: `DifferenceLayerHex`,
     //   data: difnorm,
@@ -327,95 +307,298 @@ export default function App({mapStyle = newStyle}) {
         getFillColor: [counter],
       },
     }),
+    // new IconHexTileLayer({
+    //   id: `UnmetDemandIcons`,
+    //   data: allData.map(reses => {
+    //     let newReses = {}
+    //     for (let hexId in reses) {
+    //       if (reses[hexId].Difference) 
+    //         newReses[hexId] = reses[hexId]
+    //     }
+    //     return newReses
+    //   }),
+    //   loaders: [OBJLoader],
+    //   mesh: './drop.obj',
+    //   raised: true,
+    //   getElevation: d => elevScale(d.properties.Elevation) + 1000,
+    //   resolution: curRes,
+    //   getColor: d => [232, 72, 72],
+    //   getValue: d => valueInterp(d.properties.UnmetDemand[1026]),
+    //   sizeScale: 3000,
+    //   resRange: [5, 5],
+    //   // opacity: 0.9,
+    //   updateTriggers: {
+    //     getValue: [counter],
+    //   },
+    // }),
+
+    
     new IconHexTileLayer({
-      id: `UnmetDemandIcons`,
+      id: `AgIcons`,
       data: allData.map(reses => {
         let newReses = {}
         for (let hexId in reses) {
-          if (reses[hexId].Difference) 
+          if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 0) 
             newReses[hexId] = reses[hexId]
         }
         return newReses
       }),
       loaders: [OBJLoader],
-      mesh: './drop.obj',
+      mesh: './tractor.obj',
       raised: true,
-      getElevation: d => elevScale(d.properties.Elevation) + 1000,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
       resolution: curRes,
-      getColor: d => [232, 72, 72],
-      getValue: d => valueInterp(d.properties.UnmetDemand[1026]),
-      sizeScale: 3000,
+      getColor: d => [200, 0, 0],
+      // getValue: d => 0,
+      sizeScale: 200,
+      offset: [0, 0.37],
       resRange: [5, 5],
       // opacity: 0.9,
-      updateTriggers: {
-        getValue: [counter],
-      },
+    }),
+    new IconHexTileLayer({
+      id: `UrbanIcons`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 1) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './tower.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [100, 100, 100],
+      // getValue: d => 0,
+      sizeScale: 600,
+      offset: [0, 0.37],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `WetlandIcons`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 2) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './bridge.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [0, 181, 0],
+      // getValue: d => 0,
+      sizeScale: 400,
+      offset: [0, 0.37],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `WetlandIcons1`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 3) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './bird.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [0, 0, 255],
+      // getValue: d => 0,
+      sizeScale: 200,
+      offset: [0, 0.37],
+      resRange: [5, 5],
+      // opacity: 0.9,
     }),
 
-    
-    // new IconHexTileLayer({
-    //   id: `AgIcons`,
-    //   data: allData.map(reses => {
-    //     let newReses = {}
-    //     for (let hexId in reses) {
-    //       if (reses[hexId].LandUse == 0) 
-    //         newReses[hexId] = reses[hexId]
-    //     }
-    //     return newReses
-    //   }),
-    //   loaders: [OBJLoader],
-    //   mesh: './tractor.obj',
-    //   raised: true,
-    //   getElevation: d => elevScale(d.properties.Elevation) + 1000,
-    //   resolution: curRes,
-    //   getColor: d => [200, 0, 0],
-    //   getValue: d => 0,
-    //   sizeScale: 200,
-    //   resRange: [5, 5],
-    //   // opacity: 0.9,
-    // }),
-    // new IconHexTileLayer({
-    //   id: `UrbanIcons`,
-    //   data: allData.map(reses => {
-    //     let newReses = {}
-    //     for (let hexId in reses) {
-    //       if (reses[hexId].LandUse == 1) 
-    //         newReses[hexId] = reses[hexId]
-    //     }
-    //     return newReses
-    //   }),
-    //   loaders: [OBJLoader],
-    //   mesh: './house.obj',
-    //   raised: true,
-    //   getElevation: d => elevScale(d.properties.Elevation) + 1000,
-    //   resolution: curRes,
-    //   getColor: d => [100, 100, 100],
-    //   getValue: d => 0,
-    //   sizeScale: 600,
-    //   resRange: [5, 5],
-    //   // opacity: 0.9,
-    // }),
-    // new IconHexTileLayer({
-    //   id: `WetlandIcons`,
-    //   data: allData.map(reses => {
-    //     let newReses = {}
-    //     for (let hexId in reses) {
-    //       if (reses[hexId].LandUse == 2) 
-    //         newReses[hexId] = reses[hexId]
-    //     }
-    //     return newReses
-    //   }),
-    //   loaders: [OBJLoader],
-    //   mesh: './bird.obj',
-    //   raised: true,
-    //   getElevation: d => elevScale(d.properties.Elevation) + 1000,
-    //   resolution: curRes,
-    //   getColor: d => [0, 181, 0],
-    //   getValue: d => 0,
-    //   sizeScale: 200,
-    //   resRange: [5, 5],
-    //   // opacity: 0.9,
-    // }),
+    new IconHexTileLayer({
+      id: `AgIcons2`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 0) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './tractor.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [200, 0, 0],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 200,
+      offset: [-0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `UrbanIcons2`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 1) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './tower.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [100, 100, 100],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 600,
+      offset: [-0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `WetlandIcons2`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 2) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './bridge.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [0, 181, 0],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 400,
+      offset: [-0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `WetlandIcons21`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 3) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './bird.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [0, 0, 255],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 200,
+      offset: [-0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+
+    new IconHexTileLayer({
+      id: `AgIcons3`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 0) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './tractor.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [200, 0, 0],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 200,
+      offset: [0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `UrbanIcons3`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 1) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './tower.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [100, 100, 100],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 600,
+      offset: [0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `WetlandIcons3`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 2) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './bridge.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [0, 181, 0],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 400,
+      offset: [0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
+    new IconHexTileLayer({
+      id: `WetlandIcons31`,
+      data: allData.map(reses => {
+        let newReses = {}
+        for (let hexId in reses) {
+          if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 3) 
+            newReses[hexId] = reses[hexId]
+        }
+        return newReses
+      }),
+      loaders: [OBJLoader],
+      mesh: './bird.obj',
+      raised: true,
+      getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+      resolution: curRes,
+      getColor: d => [0, 0, 255],
+      // getValue: d => 0,
+      sizeScale: 0.5 * 200,
+      offset: [0.5, -0.5],
+      resRange: [5, 5],
+      // opacity: 0.9,
+    }),
   ];
 
   return (
