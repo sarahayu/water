@@ -3,6 +3,7 @@ from functools import reduce
 import math
 import area
 from PIL import Image
+import string
 
 def latlngToMerc(lat, lon):
     z = 5
@@ -46,6 +47,16 @@ def avgArrOfArr(arr):
 
     return avgArr
 
+def maxCounter(arr):
+    keeptrack = {}
+    for a in arr:
+        if a not in keeptrack:
+            keeptrack[a] = 0
+        keeptrack[a] += 1
+    
+    sorteds = [k for k, _ in sorted(keeptrack.items(), key=lambda item: item[1], reverse=True)]
+    return sorteds
+
 
 # function avgObject(arrObjs) {  
 #   let avgObj = {}
@@ -62,29 +73,19 @@ def avgArrOfArr(arr):
 
 #   return avgObj
 # }
-
-def avgObject(isGroundwater):
-    # avgObj = {}
-
-    # for propToAvg in arrObjs:
-    #     avgObj[propToAvg] = avg([hexpoint[propToAvg] for hexpoint in arrObjs])
-
-    # return avgObj
-
-    if isGroundwater:
-        def avgFun(arrObjs):
-            return {
-                "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
-            }
-    else:
-        def avgFun(arrObjs):
-            return {
-                "UnmetDemand": avgArrOfArr([ obj["UnmetDemand"] for obj in arrObjs]),
-                "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
-                "LandUse": round(avg([ obj["LandUse"] for obj in arrObjs])),
-            }
-
-    return avgFun
+def avgGroundwater(arrObjs):
+    return {
+        "Groundwater": avgArrOfArr([ [obj["Groundwater"][k] for k in obj["Groundwater"]] for obj in arrObjs]),
+    }
+def avgDiffUnmet(arrObjs):
+    return {
+        "UnmetDemand": avgArrOfArr([ obj["UnmetDemand"] for obj in arrObjs]),
+        "Difference": avgArrOfArr([ obj["Difference"] for obj in arrObjs]),
+    }
+def aggLandUse(arrObjs):
+    return {
+        "LandUse": maxCounter([ obj["LandUse"] for obj in arrObjs]),
+    }
 
 # function flatten(arr) {  
 #   return [].concat.apply([], arr)
@@ -156,7 +157,7 @@ def polygonToPoints(dataFeature):
     # print(minLat)
     # print(maxLat)
 
-    scale = 10
+    scale = 40
     stepSize = 1 / scale
 
     poly = shapely.geometry.polygon.Polygon([(polycoord[0], polycoord[1]) for polycoord in flattenedCoords])
@@ -285,13 +286,24 @@ def gridPointsToHexPoints(dataFeatures, gridPoints, averageFn, resRange):
 
     return resPoints
 
+# def idToVal(idStr):
+#     lastPart = idStr.rstrip(string.digits)[-2:]
+#     if lastPart == "SA" or lastPart == "XA" or lastPart == "PA" or lastPart == "NA":
+#         return 0
+#     if lastPart == "SU" or lastPart == "PU" or lastPart == "NU":
+#         return 1
+#     return 2
+    
+
 def idToVal(idStr):
-    lastPart = idStr[-2:]
-    if lastPar = "SA" or lastPar = "XA" or lastPar = "PA" or lastPar = "NA":
+    lastPart = idStr.rstrip(string.digits)[-2:]
+    if lastPart == "SA" or lastPart == "SU":
         return 0
-    if lastPar = "SU" or lastPar = "PU" or lastPar = "NU":
+    if lastPart == "XA":
         return 1
-    return 2
+    if lastPart == "PA" or lastPart == "PU" or lastPart == "PR":
+        return 2
+    return 3
 
 # /**
 #  * 
@@ -342,14 +354,49 @@ with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes
         rea = tot_areas[idd]
         f["properties"]["UnmetDemand"] = [(temporal_object[idd][i]) / rea for i in temporal_object[idd]]
         f["properties"]["Difference"] = [(temporal_object[idd][i] - temporal_bl_object[idd][i]) / rea for i in temporal_object[idd]]
+
+    region_object["features"] = new_fs
+
+        
+    with open("diff_unmet_hex_med_norm_mults2.json", "w") as outfile:
+
+        hex_object = geojsonToHexPoints(region_object["features"], avgDiffUnmet, [5, 5])
+
+        ujson.dump(hex_object, outfile)
+
+# Opening JSON file
+with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes/demand_units") as region_file, \
+    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/bl_h000/unmetdemand") as temporal_file, \
+    urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/data/scenario/CS3_BL/unmetdemand") as temporal_file_bl:
+ 
+    # Reading from json file
+    region_object = ujson.load(region_file)
+    temporal_object = ujson.load(temporal_file)
+    temporal_bl_object = ujson.load(temporal_file_bl)
+
+    new_fs = [f for f in region_object["features"] if f["properties"]["DU_ID"]]
+    
+    tot_areas = {}
+    
+    for f in new_fs:
+        idd = f["properties"]["DU_ID"]
+
+        if idd not in tot_areas:
+            tot_areas[idd] = 0
+
+        tot_areas[idd] += area.area(f["geometry"]) / 6e8
+
+
+    for f in new_fs:
+        idd = f["properties"]["DU_ID"]
         f["properties"]["LandUse"] = idToVal(idd)
 
     region_object["features"] = new_fs
 
         
-    with open("diff_unmet_hex_small_norm.json", "w") as outfile:
+    with open("landuse_hex_med_norm_mults2.json", "w") as outfile:
 
-        hex_object = geojsonToHexPoints(region_object["features"], avgObject(isGroundwater=False), [5, 5])
+        hex_object = geojsonToHexPoints(region_object["features"], aggLandUse, [5, 5])
 
         ujson.dump(hex_object, outfile)
 
@@ -360,9 +407,9 @@ with open("../Baseline_Groundwater.json") as region_file:
     region_object = ujson.load(region_file)
 
         
-    with open("groundwater_hex_small_norm.json", "w") as outfile:
+    with open("groundwater_hex_med_norm_mults2.json", "w") as outfile:
 
-        hex_object = geojsonToHexPoints(region_object["features"], avgObject(isGroundwater=True), [5, 5])
+        hex_object = geojsonToHexPoints(region_object["features"], avgGroundwater, [5, 5])
 
         ujson.dump(hex_object, outfile)
     
