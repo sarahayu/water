@@ -157,7 +157,7 @@ def polygonToPoints(dataFeature):
     # print(minLat)
     # print(maxLat)
 
-    scale = 40
+    scale = 50
     stepSize = 1 / scale
 
     poly = shapely.geometry.polygon.Polygon([(polycoord[0], polycoord[1]) for polycoord in flattenedCoords])
@@ -358,9 +358,9 @@ with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes
     region_object["features"] = new_fs
 
         
-    with open("diff_unmet_hex_med_norm_mults2.json", "w") as outfile:
+    with open("diff_unmet_hex_med_res_norm.json", "w") as outfile:
 
-        hex_object = geojsonToHexPoints(region_object["features"], avgDiffUnmet, [5, 5])
+        hex_object = geojsonToHexPoints(region_object["features"], avgDiffUnmet, [5, 6])
 
         ujson.dump(hex_object, outfile)
 
@@ -394,9 +394,9 @@ with urllib.request.urlopen("http://infovis.cs.ucdavis.edu/geospatial/api/shapes
     region_object["features"] = new_fs
 
         
-    with open("landuse_hex_med_norm_mults2.json", "w") as outfile:
+    with open("landuse_hex_med_res_norm.json", "w") as outfile:
 
-        hex_object = geojsonToHexPoints(region_object["features"], aggLandUse, [5, 5])
+        hex_object = geojsonToHexPoints(region_object["features"], aggLandUse, [5, 6])
 
         ujson.dump(hex_object, outfile)
 
@@ -407,9 +407,9 @@ with open("../Baseline_Groundwater.json") as region_file:
     region_object = ujson.load(region_file)
 
         
-    with open("groundwater_hex_med_norm_mults2.json", "w") as outfile:
+    with open("groundwater_hex_med_res_norm.json", "w") as outfile:
 
-        hex_object = geojsonToHexPoints(region_object["features"], avgGroundwater, [5, 5])
+        hex_object = geojsonToHexPoints(region_object["features"], avgGroundwater, [5, 6])
 
         ujson.dump(hex_object, outfile)
     
