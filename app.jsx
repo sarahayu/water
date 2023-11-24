@@ -285,9 +285,6 @@ export default function App({ mapStyle = newStyle }) {
       }
 
     }
-    else {
-      console.log('not playing')
-    }
   }, [counter, playing])
 
   useEffect(() => {
@@ -357,7 +354,7 @@ export default function App({ mapStyle = newStyle }) {
         raised: true,
         getElevation: d => elevScale(d.properties.Elevation) + 1000,
         resolution: curRes,
-        getColor: d => [232, 72, 72],
+        getColor: d => [255, 158, 102],
         getValue: d => valueInterp(d.properties.UnmetDemand[counter]),
         sizeScale: 3000,
         resRange: [5, 5],
