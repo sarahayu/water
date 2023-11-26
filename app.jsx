@@ -403,7 +403,7 @@ export default function App({ mapStyle = newStyle }) {
         },
       }),
       new IconHexTileLayer({
-        id: `AgIcons`,
+        id: `SettlementIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -424,7 +424,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `UrbanIcons`,
+        id: `ExhangeIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -445,7 +445,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons`,
+        id: `ProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -466,7 +466,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons1`,
+        id: `NonProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -535,7 +535,7 @@ export default function App({ mapStyle = newStyle }) {
         },
       }),
       new IconHexTileLayer({
-        id: `AgIcons`,
+        id: `SettlementIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -556,7 +556,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `UrbanIcons`,
+        id: `ExhangeIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -577,7 +577,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons`,
+        id: `ProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -598,7 +598,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons1`,
+        id: `NonProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -666,7 +666,7 @@ export default function App({ mapStyle = newStyle }) {
         },
       }),
       new IconHexTileLayer({
-        id: `AgIcons`,
+        id: `SettlementIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -687,7 +687,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `UrbanIcons`,
+        id: `ExhangeIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -708,7 +708,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons`,
+        id: `ProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -729,7 +729,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons1`,
+        id: `NonProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -751,7 +751,7 @@ export default function App({ mapStyle = newStyle }) {
       }),
 
       new IconHexTileLayer({
-        id: `AgIcons2`,
+        id: `SettlementIconsLayer2`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -772,7 +772,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `UrbanIcons2`,
+        id: `ExhangeIconsLayer2`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -793,7 +793,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons2`,
+        id: `ProjectIconsLayer2`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -814,7 +814,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons21`,
+        id: `NonProjectIconsLayer2`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -836,7 +836,7 @@ export default function App({ mapStyle = newStyle }) {
       }),
 
       new IconHexTileLayer({
-        id: `AgIcons3`,
+        id: `SettlementIconsLayer3`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -857,7 +857,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `UrbanIcons3`,
+        id: `ExhangeIconsLayer3`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -878,7 +878,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons3`,
+        id: `ProjectIconsLayer3`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
@@ -899,7 +899,7 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
-        id: `WetlandIcons31`,
+        id: `NonProjectIconsLayer3`,
         data: allData.map(reses => {
           let newReses = {}
           for (let hexId in reses) {
