@@ -920,6 +920,137 @@ export default function App({ mapStyle = newStyle }) {
         // opacity: 0.9,
       }),
     ]),
+    ...(render !== "render5" ? [] : [
+
+      new SolidHexTileLayer({
+        id: `DifferenceLayerHex`,
+        data: allData.map(reses => {
+          let newReses = {}
+          for (let hexId in reses) {
+            if (reses[hexId].Difference)
+              newReses[hexId] = reses[hexId]
+          }
+          return newReses
+        }),
+        thicknessRange: [0, 1],
+        filled: true,
+        extruded: true,
+        getElevation: (d, i) => elevScale(d.properties.Elevation),
+        resolution: curRes,
+        getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
+        resRange: [5, 6],
+        opacity: 0.9,
+        updateTriggers: {
+          getFillColor: [counter],
+        },
+      }),
+      new SolidHexTileLayer({
+        id: `UnmetDemandLayer`,
+        data: allData.map(reses => {
+          let newReses = {}
+          for (let hexId in reses) {
+            if (reses[hexId].Difference)
+              newReses[hexId] = reses[hexId]
+          }
+          return newReses
+        }),
+        thicknessRange: [0.65, 0.80],
+        filled: true,
+        raised: true,
+        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
+        resolution: curRes,
+        getFillColor: d => colorInterp(d.properties.UnmetDemand[counter]),
+        resRange: [5, 6],
+        // opacity: 0.9,
+        updateTriggers: {
+          getFillColor: [counter],
+        },
+      }),
+      new IconHexTileLayer({
+        id: `SettlementIconsLayer`,
+        data: allData.map(reses => {
+          let newReses = {}
+          for (let hexId in reses) {
+            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 0)
+              newReses[hexId] = reses[hexId]
+          }
+          return newReses
+        }),
+        loaders: [OBJLoader],
+        mesh: './S.obj',
+        raised: true,
+        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        resolution: curRes,
+        getColor: d => [200, 0, 0],
+        sizeScale: 300,
+        offset: [0, 0.37],
+        resRange: [5, 6],
+        // opacity: 0.9,
+      }),
+      new IconHexTileLayer({
+        id: `ExhangeIconsLayer`,
+        data: allData.map(reses => {
+          let newReses = {}
+          for (let hexId in reses) {
+            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 1)
+              newReses[hexId] = reses[hexId]
+          }
+          return newReses
+        }),
+        loaders: [OBJLoader],
+        mesh: './E.obj',
+        raised: true,
+        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        resolution: curRes,
+        getColor: d => [100, 100, 100],
+        sizeScale: 300,
+        // offset: [0, 0.37],
+        resRange: [5, 6],
+        // opacity: 0.9,
+      }),
+      new IconHexTileLayer({
+        id: `ProjectIconsLayer`,
+        data: allData.map(reses => {
+          let newReses = {}
+          for (let hexId in reses) {
+            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 2)
+              newReses[hexId] = reses[hexId]
+          }
+          return newReses
+        }),
+        loaders: [OBJLoader],
+        mesh: './C.obj',
+        raised: true,
+        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        resolution: curRes,
+        getColor: d => [0, 181, 0],
+        sizeScale: 300,
+        // offset: [0, 0.37],
+        resRange: [5, 6],
+        // opacity: 0.9,
+      }),
+      new IconHexTileLayer({
+        id: `NonProjectIconsLayer`,
+        data: allData.map(reses => {
+          let newReses = {}
+          for (let hexId in reses) {
+            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 3)
+              newReses[hexId] = reses[hexId]
+          }
+          return newReses
+        }),
+        loaders: [OBJLoader],
+        mesh: './N.obj',
+        raised: true,
+        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        resolution: curRes,
+        getColor: d => [0, 0, 255],
+        sizeScale: 300,
+        // offset: [0, 0.37],
+        resRange: [5, 6],
+        // opacity: 0.9,
+      }),
+    ]),
     // new GeoJsonLayer({
     //   id: 'geojson2',
     //   data: landuse,
@@ -979,6 +1110,10 @@ export default function App({ mapStyle = newStyle }) {
             <div>
               <input type="radio" name="render" value="render4" checked={render == "render4"} />
               <label htmlFor="render4">Render 4</label>
+            </div>
+            <div>
+              <input type="radio" name="render" value="render5" checked={render == "render5"} />
+              <label htmlFor="render5">Render 5</label>
             </div>
           </div>
           <div onChange={function (e) {
