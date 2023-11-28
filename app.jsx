@@ -329,7 +329,7 @@ export default function App({ mapStyle = newStyle }) {
         ),
         resolution: curRes,
         getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
-        resRange: [5, 5],
+        resRange: [5, 6],
         opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
@@ -346,7 +346,7 @@ export default function App({ mapStyle = newStyle }) {
         ),
         resolution: curRes,
         getFillColor: d => colorInterpGW(d.properties.Groundwater[counter]),
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
@@ -372,7 +372,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [255, 158, 102],
         getValue: d => valueInterp(d.properties.UnmetDemand[counter]),
         sizeScale: 3000,
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
         updateTriggers: {
           getValue: [counter],
@@ -399,7 +399,7 @@ export default function App({ mapStyle = newStyle }) {
         ),
         resolution: curRes,
         getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
-        resRange: [5, 5],
+        resRange: [5, 6],
         opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
@@ -416,7 +416,7 @@ export default function App({ mapStyle = newStyle }) {
         ),
         resolution: curRes,
         getFillColor: d => colorInterpGW(d.properties.Groundwater[counter]),
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
@@ -445,7 +445,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [200, 0, 0],
         sizeScale: 500,
         offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
@@ -471,7 +471,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [100, 100, 100],
         sizeScale: 550,
         // offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
@@ -497,7 +497,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [0, 181, 0],
         sizeScale: 180,
         // offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
@@ -523,7 +523,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [0, 0, 255],
         sizeScale: 140,
         // offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
 
@@ -548,7 +548,7 @@ export default function App({ mapStyle = newStyle }) {
         ),
         resolution: curRes,
         getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
-        resRange: [5, 5],
+        resRange: [5, 6],
         opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
@@ -572,7 +572,7 @@ export default function App({ mapStyle = newStyle }) {
         ),
         resolution: curRes,
         getFillColor: d => colorInterp(d.properties.UnmetDemand[counter]),
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
@@ -601,7 +601,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [200, 0, 0],
         sizeScale: 500,
         offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
@@ -627,7 +627,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [100, 100, 100],
         sizeScale: 550,
         // offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
@@ -653,7 +653,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [0, 181, 0],
         sizeScale: 180,
         // offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
@@ -679,7 +679,7 @@ export default function App({ mapStyle = newStyle }) {
         getColor: d => [0, 0, 255],
         sizeScale: 140,
         // offset: [0, 0.37],
-        resRange: [5, 5],
+        resRange: [5, 6],
         // opacity: 0.9,
       }),
     ]),
