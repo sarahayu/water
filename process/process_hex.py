@@ -194,7 +194,7 @@ def polygonToPoints(dataFeature):
 #   return resPoints
 # }
 
-def gridPointsToHexPoints(gridPoints, averageFn, resRange):
+def gridPointsToHexPoints(gridPoints, personnelPoints, averageFn, resRange):
     resPoints = []
 
     minRes, maxRes = resRange
@@ -205,6 +205,8 @@ def gridPointsToHexPoints(gridPoints, averageFn, resRange):
     
     for res in range(minRes, maxRes + 1):
         binnedPoints = {}
+        binnedPers = {}
+        binnedPersOut = {}
 
         for point in gridPoints:
             lon, lat = point["centroid"]["coordinates"][0], point["centroid"]["coordinates"][1]
@@ -216,10 +218,23 @@ def gridPointsToHexPoints(gridPoints, averageFn, resRange):
                 "power": point["power"],
             }
 
+            binnedPers[hexId] = []
+
             if hexId in binnedPoints:
                 binnedPoints[hexId].append(pointProps)
             else:
                 binnedPoints[hexId] = [ pointProps ]
+                
+        for point in personnelPoints:
+            lat, lon = point["coordinates"]
+            hexId = h3.latlng_to_cell(lat, lon, res)
+            
+            if hexId in binnedPers:
+                binnedPers[hexId].append(point["personnel"])
+            elif hexId in binnedPersOut:
+                binnedPersOut[hexId].append(point["personnel"])
+            else:
+                binnedPersOut[hexId] = [ point["personnel"] ]
 
         points = {}
 
@@ -238,11 +253,19 @@ def gridPointsToHexPoints(gridPoints, averageFn, resRange):
             avgObj = averageFn(binnedPoints[hexId])
 
             avgObj["Elevation"] = elev
-            avgObj["personnel"] = random.random() if random.random() < 0.15 else 0
+            avgObj["personnel"] = avg(binnedPers[hexId]) if hexId in binnedPers else 0
             
             points[hexId] = avgObj
 
             idd += 1
+        
+        for hexId in binnedPersOut:
+            points[hexId] = {
+                "Elevation": 0,
+                "confidence": 0,
+                "power": 0,
+                "personnel": avg(binnedPersOut[hexId])
+            }
 
         resPoints.append(points)
 
@@ -253,9 +276,124 @@ with open("wildfire.json") as wildfire_file:
  
     # Reading from json file
     wildfire_arr = ujson.load(wildfire_file)
+
+    perss = [
+    {
+        "coordinates": [
+            37.90914682546901,
+            -119.82259292764647
+        ],
+        "personnel": 0.860161037286291
+    },
+    {
+        "coordinates": [
+            37.80117147731339,
+            -119.94354213025379
+        ],
+        "personnel": 0.7678378139439905
+    },
+    {
+        "coordinates": [
+            37.83898979332611,
+            -119.87006710784391
+        ],
+        "personnel": 0.004055144158407464
+    },
+    {
+        "coordinates": [
+            37.86147741984656,
+            -119.87085437572813
+        ],
+        "personnel": 0.941002271395834
+    },
+    {
+        "coordinates": [
+            37.92770111497013,
+            -120.09775426695572
+        ],
+        "personnel": 0.5845462257019302
+    },
+    {
+        "coordinates": [
+            37.94733193550108,
+            -120.14836612088459
+        ],
+        "personnel": 0.4966034986165482
+    },
+    {
+        "coordinates": [
+            37.899251257126046,
+            -119.79728242442236
+        ],
+        "personnel": 0.5672354768631239
+    },
+    {
+        "coordinates": [
+            37.79128918442446,
+            -119.91826247332588
+        ],
+        "personnel": 0.7755127010728279
+    },
+    {
+        "coordinates": [
+            37.91183305609935,
+            -119.77274029713112
+        ],
+        "personnel": 0.16636374579324753
+    },
+    {
+        "coordinates": [
+            37.785802533597085,
+            -120.01775298724097
+        ],
+        "personnel": 0.45573485868103825
+    },
+    {
+        "coordinates": [
+            38.0061784015227,
+            -119.90091603558781
+        ],
+        "personnel": 0.7125732007896374
+    },
+    {
+        "coordinates": [
+            38.00065855170302,
+            -120.00062144177393
+        ],
+        "personnel": 0.44805592600101607
+    },
+    {
+        "coordinates": [
+            37.781399385522384,
+            -119.89298419813295
+        ],
+        "personnel": 0.48938611652176434
+    },
+    {
+        "coordinates": [
+            37.87943755694126,
+            -119.74666572525322
+        ],
+        "personnel": 0.002830426682370324
+    },
+    {
+        "coordinates": [
+            37.89672093408609,
+            -120.24613530113226
+        ],
+        "personnel": 0.09274340534219172
+    },
+    {
+        "coordinates": [
+            37.88977397800071,
+            -120.17111961420962
+        ],
+        "personnel": 0.4540783303488197
+    }
+]
         
     with open("wildfire_hex_res.json", "w") as outfile:
 
-        hex_object = gridPointsToHexPoints(wildfire_arr, avgObject, [7, 9])
+        hex_object = gridPointsToHexPoints(wildfire_arr, perss, avgObject, [7, 9])
 
         ujson.dump(hex_object, outfile)
