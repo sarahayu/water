@@ -155,7 +155,7 @@ const valueInterp = scaleLinear()
   .clamp(true)
   
 const elevInterp = scaleLinear()
-  .domain([0, 150])
+  .domain([0, -150])
   .range([0, 20000])
 
 const colorInterpGW = (groundwater) => saturate(interpolateBlues(
@@ -168,11 +168,11 @@ const elevInterpGW = scaleLinear()
   .range([0, 20000])
 
 const colorInterpDifference = (unmetDemand) => d3.interpolate(interpolatePRGn(
-  scaleLinear().domain([-50, 50]).range([0, 1])(unmetDemand)
+  scaleLinear().domain([-30, 30]).range([0, 1])(unmetDemand)
 ), 'white')(0.5).replace(/[^\d,]/g, '').split(',').map(d => Number(d))
 
 const valueInterpDifference = scaleLinear()
-  .domain([-50, 50])
+  .domain([-30, 30])
   .range([0, 1])
   .clamp(true)
 
