@@ -153,10 +153,19 @@ const valueInterp = scaleLinear()
   .domain([-150, 10])
   .range([1, 0])
   .clamp(true)
+  
+const elevInterp = scaleLinear()
+  .domain([0, 150])
+  .range([0, 20000])
 
 const colorInterpGW = (groundwater) => saturate(interpolateBlues(
   scaleLinear().domain([-250, 700]).range([0, 1])(groundwater)
 ).replace(/[^\d,]/g, '').split(',').map(d => Number(d)))
+
+
+const elevInterpGW = scaleLinear()
+  .domain([0, 700])
+  .range([0, 20000])
 
 const colorInterpDifference = (unmetDemand) => d3.interpolate(interpolatePRGn(
   scaleLinear().domain([-50, 50]).range([0, 1])(unmetDemand)
@@ -262,6 +271,7 @@ export default function App({ mapStyle = newStyle }) {
   const [toolsVis, setToolsVis] = useState(true);
   const [render, setRender] = useState("render1");
   const [view, setView] = useState("view1");
+  const [heightEncoding, setHeightEncoding] = useState("heightEncoding1");
   const [viewState, setViewState] = useState(VIEW_STATE1);
 
   useEffect(() => {
@@ -313,31 +323,35 @@ export default function App({ mapStyle = newStyle }) {
         }),
         thicknessRange: [0, 1],
         filled: true,
-        extruded: true,
-        getElevation: (d, i) => elevScale(d.properties.Elevation),
+        extruded: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? ((d, i) => elevScale(d.properties.Elevation)) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
-        resRange: [5, 6],
+        resRange: [5, 5],
         opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
         },
       }),
-      new SolidHexTileLayer({
+      ...(heightEncoding === "heightEncoding3" ? [] : [new SolidHexTileLayer({
         id: `GroundwaterLayer`,
         data: allData,
         thicknessRange: [0.65, 0.80],
         filled: true,
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getFillColor: d => colorInterpGW(d.properties.Groundwater[counter]),
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
         },
-      }),
+      })]),
       new IconHexTileLayer({
         id: `UnmetDemandIcons`,
         data: allData.map(reses => {
@@ -350,13 +364,15 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './drop.obj',
-        raised: true,
-        getElevation: d => elevScale(d.properties.Elevation) + 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => elevScale(d.properties.Elevation) + 1000) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [255, 158, 102],
         getValue: d => valueInterp(d.properties.UnmetDemand[counter]),
         sizeScale: 3000,
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
         updateTriggers: {
           getValue: [counter],
@@ -377,32 +393,39 @@ export default function App({ mapStyle = newStyle }) {
         }),
         thicknessRange: [0, 1],
         filled: true,
-        extruded: true,
-        getElevation: (d, i) => elevScale(d.properties.Elevation),
+        extruded: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? ((d, i) => elevScale(d.properties.Elevation)) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
-        resRange: [5, 6],
+        resRange: [5, 5],
         opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
         },
       }),
-      new SolidHexTileLayer({
+      ...(heightEncoding === "heightEncoding3" ? [] : [new SolidHexTileLayer({
         id: `GroundwaterLayer`,
         data: allData,
         thicknessRange: [0.65, 0.80],
         filled: true,
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getFillColor: d => colorInterpGW(d.properties.Groundwater[counter]),
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
         },
-      }),
+      })]),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `SettlementIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -414,16 +437,21 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './dam.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [200, 0, 0],
         sizeScale: 500,
         offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `ExhangeIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -435,16 +463,21 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './cow.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [100, 100, 100],
         sizeScale: 550,
         // offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `ProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -456,16 +489,21 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './project.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [0, 181, 0],
         sizeScale: 180,
         // offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `NonProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -477,13 +515,15 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './nonproject.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterpGW(d.properties.Groundwater[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [0, 0, 255],
         sizeScale: 140,
         // offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
 
@@ -502,17 +542,19 @@ export default function App({ mapStyle = newStyle }) {
         }),
         thicknessRange: [0, 1],
         filled: true,
-        extruded: true,
-        getElevation: (d, i) => elevScale(d.properties.Elevation),
+        extruded: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? ((d, i) => elevScale(d.properties.Elevation)) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterp(d.properties.UnmetDemand[counter]) : () => 10
+        ),
         resolution: curRes,
         getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
-        resRange: [5, 6],
+        resRange: [5, 5],
         opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
         },
       }),
-      new SolidHexTileLayer({
+      ...(heightEncoding === "heightEncoding3" ? [] : [new SolidHexTileLayer({
         id: `UnmetDemandLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -524,17 +566,22 @@ export default function App({ mapStyle = newStyle }) {
         }),
         thicknessRange: [0.65, 0.80],
         filled: true,
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10) : (
+          heightEncoding === "heightEncoding3" ? d => elevInterp(d.properties.UnmetDemand[counter]) : () => 10
+        ),
         resolution: curRes,
         getFillColor: d => colorInterp(d.properties.UnmetDemand[counter]),
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
         updateTriggers: {
           getFillColor: [counter],
         },
-      }),
+      })]),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `SettlementIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -546,16 +593,21 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './dam.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => d.properties.UnmetDemand == undefined ? 10 : elevInterp(d.properties.UnmetDemand[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [200, 0, 0],
         sizeScale: 500,
         offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `ExhangeIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -567,16 +619,21 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './cow.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => d.properties.UnmetDemand == undefined ? 10 : elevInterp(d.properties.UnmetDemand[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [100, 100, 100],
         sizeScale: 550,
         // offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `ProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -588,16 +645,21 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './project.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => d.properties.UnmetDemand == undefined ? 10 : elevInterp(d.properties.UnmetDemand[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [0, 181, 0],
         sizeScale: 180,
         // offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
       new IconHexTileLayer({
+        updateTriggers: {
+          getElevation: [counter],
+        },
         id: `NonProjectIconsLayer`,
         data: allData.map(reses => {
           let newReses = {}
@@ -609,330 +671,18 @@ export default function App({ mapStyle = newStyle }) {
         }),
         loaders: [OBJLoader],
         mesh: './nonproject.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
+        raised: heightEncoding === "heightEncoding1" || heightEncoding === "heightEncoding3",
+        getElevation: heightEncoding === "heightEncoding1" ? (d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000) : (
+          heightEncoding === "heightEncoding3" ? d => d.properties.UnmetDemand == undefined ? 10 : elevInterp(d.properties.UnmetDemand[counter]) : () => 10
+        ),
         resolution: curRes,
         getColor: d => [0, 0, 255],
         sizeScale: 140,
         // offset: [0, 0.37],
-        resRange: [5, 6],
+        resRange: [5, 5],
         // opacity: 0.9,
       }),
     ]),
-    ...(render !== "render4" ? [] : [
-
-      new SolidHexTileLayer({
-        id: `DifferenceLayerHex`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].Difference)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        thicknessRange: [0, 1],
-        filled: true,
-        extruded: true,
-        getElevation: (d, i) => elevScale(d.properties.Elevation),
-        resolution: curRes,
-        getFillColor: d => colorInterpDifference(d.properties.Difference[counter]),
-        resRange: [5, 6],
-        opacity: 0.9,
-        updateTriggers: {
-          getFillColor: [counter],
-        },
-      }),
-      new SolidHexTileLayer({
-        id: `UnmetDemandLayer`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].Difference)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        thicknessRange: [0.65, 0.80],
-        filled: true,
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1 : 10,
-        resolution: curRes,
-        getFillColor: d => colorInterp(d.properties.UnmetDemand[counter]),
-        resRange: [5, 6],
-        // opacity: 0.9,
-        updateTriggers: {
-          getFillColor: [counter],
-        },
-      }),
-      new IconHexTileLayer({
-        id: `SettlementIconsLayer`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 0)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './dam.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [200, 0, 0],
-        sizeScale: 500,
-        offset: [0, 0.37],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `ExhangeIconsLayer`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 1)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './cow.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [100, 100, 100],
-        sizeScale: 550,
-        offset: [0, 0.37],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `ProjectIconsLayer`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 2)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './project.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [0, 181, 0],
-        sizeScale: 180,
-        offset: [0, 0.37],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `NonProjectIconsLayer`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse[0] == 3)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './nonproject.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [0, 0, 255],
-        sizeScale: 140,
-        offset: [0, 0.37],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-
-      new IconHexTileLayer({
-        id: `SettlementIconsLayer2`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 0)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './dam.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [200, 0, 0],
-        sizeScale: 0.5 * 500,
-        offset: [-0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `ExhangeIconsLayer2`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 1)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './cow.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [100, 100, 100],
-        sizeScale: 0.5 * 550,
-        offset: [-0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `ProjectIconsLayer2`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 2)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './project.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [0, 181, 0],
-        sizeScale: 0.5 * 180,
-        offset: [-0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `NonProjectIconsLayer2`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 1 && reses[hexId].LandUse[1] == 3)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './nonproject.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [0, 0, 255],
-        sizeScale: 0.5 * 140,
-        offset: [-0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-
-      new IconHexTileLayer({
-        id: `SettlementIconsLayer3`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 0)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './dam.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [200, 0, 0],
-        sizeScale: 0.5 * 500,
-        offset: [0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `ExhangeIconsLayer3`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 1)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './cow.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [100, 100, 100],
-        sizeScale: 0.5 * 550,
-        offset: [0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `ProjectIconsLayer3`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 2)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './project.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [0, 181, 0],
-        sizeScale: 0.5 * 180,
-        offset: [0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-      new IconHexTileLayer({
-        id: `NonProjectIconsLayer3`,
-        data: allData.map(reses => {
-          let newReses = {}
-          for (let hexId in reses) {
-            if (reses[hexId].LandUse && reses[hexId].LandUse.length > 2 && reses[hexId].LandUse[2] == 3)
-              newReses[hexId] = reses[hexId]
-          }
-          return newReses
-        }),
-        loaders: [OBJLoader],
-        mesh: './nonproject.obj',
-        raised: true,
-        getElevation: d => d.properties.Difference ? elevScale(d.properties.Elevation) + 1000 : 1000,
-        resolution: curRes,
-        getColor: d => [0, 0, 255],
-        sizeScale: 0.5 * 140,
-        offset: [0.5, -0.5],
-        resRange: [5, 6],
-        // opacity: 0.9,
-      }),
-    ]),
-    // new GeoJsonLayer({
-    //   id: 'geojson2',
-    //   data: landuse,
-    //   // opacity: 0.3,
-    //   stroked: false,
-    //   filled: true,
-    //   // extruded: true,
-    //   wireframe: true,
-    //   // getElevation: f => Math.sqrt(f.properties.valuePerSqm) * 10,
-    //   getFillColor: f => f.properties.LandUse === 0 ? [255, 0, 0] : (f.properties.LandUse === 1 ? [100, 100, 100] : (f.properties.LandUse === 2 ? [0, 181, 0] : [0, 0, 255])),
-    //   getLineColor: [255, 255, 255],
-    //   pickable: true
-    // }),
 
   ];
 
@@ -975,11 +725,6 @@ export default function App({ mapStyle = newStyle }) {
               <input type="radio" name="render" value="render3" checked={render == "render3"} />
               <label htmlFor="render3">Render 3</label>
             </div>
-
-            <div>
-              <input type="radio" name="render" value="render4" checked={render == "render4"} />
-              <label htmlFor="render4">Render 4</label>
-            </div>
           </div>
           <div onChange={function (e) {
             setView(e.target.value)
@@ -1000,6 +745,27 @@ export default function App({ mapStyle = newStyle }) {
             <div>
               <input type="radio" name="view" value="view3" checked={view == "view3"} />
               <label htmlFor="view3">View 3</label>
+            </div>
+          </div>
+          <div onChange={function (e) {
+            setHeightEncoding(e.target.value)
+          }} style={{
+            position: 'absolute', display: 'block', bottom: "50%", right: "0", transform: "translateY(50%)"
+          }}>
+
+            <div>
+              <input type="radio" name="heightEncoding" value="heightEncoding1" checked={heightEncoding == "heightEncoding1"} />
+              <label htmlFor="heightEncoding1">Height</label>
+            </div>
+
+            <div>
+              <input type="radio" name="heightEncoding" value="heightEncoding2" checked={heightEncoding == "heightEncoding2"} />
+              <label htmlFor="heightEncoding2">No Height</label>
+            </div>
+
+            <div>
+              <input type="radio" name="heightEncoding" value="heightEncoding3" checked={heightEncoding == "heightEncoding3"} />
+              <label htmlFor="heightEncoding3">Alternate Height</label>
             </div>
           </div>
           <div>
